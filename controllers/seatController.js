@@ -1,6 +1,10 @@
 const { Tenant, Subscription, User } = require('../models');
 const stripe = require('../utils/stripe');
 
+/**
+ * Sincroniza a quantidade de assentos pagos com o número de usuários ativos.
+ * Atualiza tanto o Stripe quanto o banco de dados local.
+ */
 const syncSeats = async (req, res) => {
   try {
     const { tenant_id } = req.body;
@@ -77,6 +81,10 @@ const syncSeats = async (req, res) => {
   }
 };
 
+/**
+ * Obtém informações sobre uso de assentos do tenant, incluindo
+ * usuários ativos, total e quantidade de assentos pagos.
+ */
 const getSeatUsage = async (req, res) => {
   try {
     const { tenant_id } = req.params;
@@ -123,6 +131,9 @@ const getSeatUsage = async (req, res) => {
   }
 };
 
+/**
+ * Ativa um usuário específico e sincroniza os assentos após a ativação.
+ */
 const addSeat = async (req, res) => {
   try {
     const { tenant_id, user_id } = req.body;
@@ -154,6 +165,9 @@ const addSeat = async (req, res) => {
   }
 };
 
+/**
+ * Desativa um usuário específico e ajusta a quantidade de assentos sem proration imediata.
+ */
 const removeSeat = async (req, res) => {
   try {
     const { tenant_id, user_id } = req.body;

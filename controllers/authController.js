@@ -2,12 +2,21 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User, Tenant } = require('../models');
 
+/**
+ * Gera um token JWT para o usuário fornecido.
+ * @param {Object} user - Instância do usuário autenticado.
+ * @returns {string} Token JWT válido por 1 hora.
+ */
 const generateToken = (user) => {
   return jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
     expiresIn: '1h'
   });
 };
 
+/**
+ * Registra um novo usuário vinculado a um tenant existente.
+ * Valida campos obrigatórios, cria o usuário e retorna um token JWT.
+ */
 const register = async (req, res) => {
   try {
     const { tenant_id, email, password, name, role } = req.body;
@@ -54,6 +63,10 @@ const register = async (req, res) => {
   }
 };
 
+/**
+ * Autentica um usuário existente verificando email e senha.
+ * Retorna o token JWT e os dados do usuário autenticado.
+ */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -94,6 +107,9 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * Retorna as informações do usuário atualmente autenticado.
+ */
 const me = (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Autenticação requerida' });

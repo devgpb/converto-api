@@ -1,6 +1,10 @@
 const { Tenant, Subscription, AuditBillingEvent } = require('../models');
 const stripe = require('../utils/stripe');
 
+/**
+ * Processa eventos recebidos do Stripe e delega para handlers específicos.
+ * Também registra o evento para auditoria e marca como processado.
+ */
 const handleStripeWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -74,6 +78,10 @@ const handleStripeWebhook = async (req, res) => {
   }
 };
 
+/**
+ * Trata o evento de finalização de sessão de checkout.
+ * Atualiza o status do tenant e registra a assinatura inicial.
+ */
 const handleCheckoutSessionCompleted = async (session) => {
   try {
     const tenantId = session.metadata?.tenant_id;
@@ -114,6 +122,10 @@ const handleCheckoutSessionCompleted = async (session) => {
   }
 };
 
+/**
+ * Lida com criação ou atualização de uma assinatura no Stripe.
+ * Sincroniza dados da assinatura e atualiza status de billing do tenant.
+ */
 const handleSubscriptionCreatedOrUpdated = async (subscription) => {
   try {
     const tenantId = subscription.metadata?.tenant_id;
@@ -159,6 +171,9 @@ const handleSubscriptionCreatedOrUpdated = async (subscription) => {
   }
 };
 
+/**
+ * Atualiza registros quando uma assinatura é cancelada no Stripe.
+ */
 const handleSubscriptionDeleted = async (subscription) => {
   try {
     const existingSubscription = await Subscription.findOne({
@@ -182,6 +197,9 @@ const handleSubscriptionDeleted = async (subscription) => {
   }
 };
 
+/**
+ * Atualiza o status de cobrança do tenant quando uma fatura é paga.
+ */
 const handleInvoicePaid = async (invoice) => {
   try {
     if (invoice.subscription) {
@@ -204,6 +222,9 @@ const handleInvoicePaid = async (invoice) => {
   }
 };
 
+/**
+ * Define o tenant como inadimplente quando o pagamento da fatura falha.
+ */
 const handleInvoicePaymentFailed = async (invoice) => {
   try {
     if (invoice.subscription) {
@@ -226,6 +247,10 @@ const handleInvoicePaymentFailed = async (invoice) => {
   }
 };
 
+/**
+ * Processa Payment Intents concluídos para métodos assíncronos.
+ * Garante que o tenant fique ativo após confirmação do pagamento.
+ */
 const handlePaymentIntentSucceeded = async (paymentIntent) => {
   try {
     // Para pagamentos assíncronos como Boleto e Pix
@@ -252,6 +277,10 @@ const handlePaymentIntentSucceeded = async (paymentIntent) => {
   }
 };
 
+/**
+ * Processa Payment Intents que falharam em métodos de pagamento assíncronos.
+ * Atualiza o status do tenant para past_due quando necessário.
+ */
 const handlePaymentIntentFailed = async (paymentIntent) => {
   try {
     // Para pagamentos assíncronos que falharam
