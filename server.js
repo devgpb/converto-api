@@ -11,6 +11,7 @@ const tenantRoutes = require('./routes/tenants');
 const billingRoutes = require('./routes/billing');
 const seatRoutes = require('./routes/seats');
 const webhookRoutes = require('./routes/webhook');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/seats', seatRoutes);
+app.use('/api/auth', authRoutes);
 
 // Rota de health check
 app.get('/health', (req, res) => {
@@ -58,7 +60,8 @@ app.get('/', (req, res) => {
       tenants: '/api/tenants',
       billing: '/api/billing',
       seats: '/api/seats',
-      webhook: '/api/stripe/webhook'
+      webhook: '/api/stripe/webhook',
+      auth: '/api/auth'
     }
   });
 });
