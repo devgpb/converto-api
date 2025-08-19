@@ -2,6 +2,10 @@ const { Tenant, Subscription } = require('../models');
 const stripe = require('../utils/stripe');
 const { v4: uuidv4 } = require('uuid');
 
+/**
+ * Cria uma sessão de checkout no Stripe para iniciar uma assinatura.
+ * Gera chave de idempotência e configura metadados do tenant.
+ */
 const createCheckoutSession = async (req, res) => {
   try {
     const { tenant_id, price_id, seatCountInicial, success_url, cancel_url } = req.body;
@@ -64,6 +68,10 @@ const createCheckoutSession = async (req, res) => {
   }
 };
 
+/**
+ * Cria uma sessão do portal de cobrança do Stripe para o cliente.
+ * Permite que o tenant gerencie dados de pagamento e faturas.
+ */
 const createPortalSession = async (req, res) => {
   try {
     const { tenant_id } = req.body;
@@ -104,6 +112,9 @@ const createPortalSession = async (req, res) => {
   }
 };
 
+/**
+ * Recupera o status de assinatura atual do tenant informado.
+ */
 const getSubscriptionStatus = async (req, res) => {
   try {
     const { tenant_id } = req.params;

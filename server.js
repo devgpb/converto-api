@@ -16,6 +16,7 @@ const crmRoutes = require('./routes/crmRouter')
 const usuariosRoutes = require('./routes/usuariosRouter')
 
 
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,7 @@ app.use('/api/crm',crmRoutes)
 app.use('/api/usuarios',usuariosRoutes)
 
 
+app.use('/api/auth', authRoutes);
 
 // Rota de health check
 app.get('/health', (req, res) => {
@@ -68,7 +70,8 @@ app.get('/', (req, res) => {
       tenants: '/api/tenants',
       billing: '/api/billing',
       seats: '/api/seats',
-      webhook: '/api/stripe/webhook'
+      webhook: '/api/stripe/webhook',
+      auth: '/api/auth'
     }
   });
 });

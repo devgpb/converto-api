@@ -1,6 +1,9 @@
 const { Tenant } = require('../models');
 const stripe = require('../utils/stripe');
 
+/**
+ * Cria um novo tenant e um customer correspondente no Stripe.
+ */
 const createTenant = async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -51,6 +54,9 @@ const createTenant = async (req, res) => {
   }
 };
 
+/**
+ * Busca um tenant pelo ID incluindo assinaturas e usuários relacionados.
+ */
 const getTenant = async (req, res) => {
   try {
     const { id } = req.params;
@@ -73,6 +79,9 @@ const getTenant = async (req, res) => {
   }
 };
 
+/**
+ * Atualiza dados do tenant tanto localmente quanto no Stripe quando necessário.
+ */
 const updateTenant = async (req, res) => {
   try {
     const { id } = req.params;

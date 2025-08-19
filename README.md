@@ -55,6 +55,11 @@ npm start
 
 ### Endpoints Principais
 
+#### Autenticação
+- `POST /api/auth/register` - Registrar novo usuário
+- `POST /api/auth/login` - Autenticar e obter token JWT
+- `GET /api/auth/me` - Obter dados do usuário autenticado
+
 #### Tenants
 - `POST /api/tenants` - Criar novo tenant
 - `GET /api/tenants/:id` - Buscar tenant
