@@ -11,6 +11,11 @@ const tenantRoutes = require('./routes/tenants');
 const billingRoutes = require('./routes/billing');
 const seatRoutes = require('./routes/seats');
 const webhookRoutes = require('./routes/webhook');
+const clientesRoutes = require('./routes/clientesRouter')
+const crmRoutes = require('./routes/crmRouter')
+const usuariosRoutes = require('./routes/usuariosRouter')
+
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +43,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/seats', seatRoutes);
+app.use('/api/clientes',clientesRoutes)
+app.use('/api/crm',crmRoutes)
+app.use('/api/usuarios',usuariosRoutes)
+
+
 
 // Rota de health check
 app.get('/health', (req, res) => {
