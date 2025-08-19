@@ -1,5 +1,5 @@
-module.exports = (Sequelize, DataTypes) => {
-  const Clientes = Sequelize.define("Clientes", {
+module.exports = (sequelize, DataTypes) => {
+  const Clientes = sequelize.define("Clientes", {
     id_clientee: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -53,12 +53,12 @@ module.exports = (Sequelize, DataTypes) => {
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: Sequelize.NOW
+      defaultValue: DataTypes.NOW
     },
     updated_at: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: Sequelize.NOW
+      defaultValue: DataTypes.NOW
     },
     deleted_at: {
       type: DataTypes.DATE,

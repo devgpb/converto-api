@@ -1,4 +1,4 @@
-module.exports = function (sequelize, DataTypes) {
+module.exports = (sequelize, DataTypes) => {
     const Eventos = sequelize.define("Eventos", {
         id_evento: {
             type: DataTypes.INTEGER,
@@ -32,7 +32,6 @@ module.exports = function (sequelize, DataTypes) {
             allowNull: true
         }
     }, {
-        sequelize,
         tableName: 'eventos',
         modelName: 'Eventos',
         paranoid: true,  // Modo paranoia ativado para soft deletes usando o campo "deleted_at"
