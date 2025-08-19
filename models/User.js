@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const User = sequelize.define('User', {
-  id: {
+  id_usuario: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
@@ -30,11 +30,6 @@ const User = sequelize.define('User', {
   role: {
     type: DataTypes.ENUM('admin', 'member'),
     defaultValue: 'member'
-  },
-  email:{
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'inicial@email.com',
   },
   is_active: {
     type: DataTypes.BOOLEAN,

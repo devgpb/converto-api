@@ -162,7 +162,7 @@ exports.getClientes = async (req, res) => {
             include: [{
                 model: models.User,
                 as: 'responsavel',
-                attributes: ['nomeCompleto', 'id'],
+                attributes: ['name', 'id'],
             }],
             limit: 50 
         });
@@ -317,7 +317,7 @@ exports.postEvento = async (req, res) => {
     const completo = await models.EventosUsuarioCliente.findByPk(eventoBanco.id_evento, {
       include: [
         { model: models.Clientes, as: 'cliente', attributes: ['id_cliente','nome','celular','cidade','status'] },
-        { model: models.User, as: 'usuario', attributes: ['id_usuario','nomeCompleto'] }
+        { model: models.User, as: 'usuario', attributes: ['id_usuario','name'] }
       ]
     });
 
@@ -818,7 +818,7 @@ exports.listEventosMarcados = async (req, res) => {
         data: { [Op.between]: [start, end] },
       },
       include: [
-        { model: models.User, as: 'usuario', attributes: ['nomeCompleto'], required: false },
+        { model: models.User, as: 'usuario', attributes: ['name'], required: false },
         { model: models.Clientes, as: 'cliente', attributes: ['nome'], required: false }
       ],
       order: [['data', 'DESC'], ['id_evento', 'DESC']],
@@ -832,7 +832,7 @@ exports.listEventosMarcados = async (req, res) => {
       data: r.data,
       evento: r.evento,
       confirmado: r.confirmado,
-      usuario: { nomeCompleto: r.usuario ? r.usuario.nomeCompleto : null },
+      usuario: { name: r.usuario ? r.usuario.name : null },
       cliente: { nome: r.cliente ? r.cliente.nome : null }
     }));
 

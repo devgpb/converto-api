@@ -1,5 +1,4 @@
 const models = require("../models");
-const { cargos } = require("./constantes")
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const generateShortCode = require('../utils/rest').generateShortCode
@@ -43,13 +42,6 @@ async function getUserByCargo(req, res, cargo){
     }
   };
 
-  exports.getCargos = async (req, res) => {
-    try {
-      return res.status(201).json(cargos);
-    } catch (error) {
-      return res.status(500).json({ error: 'Erro ao criar usuário' });
-    }
-  };
   
   // READ - Lista todos os usuários
   exports.getAllUsers = async (req, res) => {

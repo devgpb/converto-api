@@ -8,7 +8,7 @@ const { User, Tenant } = require('../models');
  * @returns {string} Token JWT válido por 1 hora.
  */
 const generateToken = (user) => {
-  return jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+  return jwt.sign({ userId: user.id_usuario }, process.env.JWT_SECRET, {
     expiresIn: '1h'
   });
 };
@@ -45,7 +45,7 @@ const register = async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: user.id,
+        id: user.id_usuario,
         email: user.email,
         name: user.name,
         role: user.role,
@@ -94,7 +94,7 @@ const login = async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id,
+        id: user.id_usuario,
         email: user.email,
         name: user.name,
         role: user.role,
@@ -116,7 +116,7 @@ const me = (req, res) => {
   }
 
   res.json({
-    id: req.user.id,
+    id: req.user.id_usuario,
     email: req.user.email,
     name: req.user.name,
     role: req.user.role,

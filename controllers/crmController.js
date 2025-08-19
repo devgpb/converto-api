@@ -48,7 +48,7 @@ exports.pesquisarNumero = async (req, res) => {
       include: [{
         model: models.User,
         as: 'responsavel',
-        attributes: ['nomeCompleto', 'id_usuario'],
+        attributes: ['name', 'id_usuario'],
       }] 
     });
 

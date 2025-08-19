@@ -7,7 +7,6 @@ const auth = require('../auth/auth-middleware')
 // Rotas para CRUD de usuários
 router.post('/', auth.verifyToken, UserController.createUser);
 router.get('/', auth.verifyToken, UserController.getAllUsers);
-router.get('/cargos', auth.verifyToken, UserController.getCargos);
 router.get('/colaboradores', auth.verifyToken, UserController.getColaboradores);
 
 
