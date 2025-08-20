@@ -235,7 +235,7 @@ Para dúvidas ou problemas, consulte a documentação do Stripe ou abra uma issu
 
 ## Comandos
 
-stripe listen --forward-to localhost:3000/webhook
+stripe listen --forward-to localhost:3000/api/stripe/webhook
 ## Postman
 
 Uma coleção Postman está disponível em `postman/converto-api.postman_collection.json` e um arquivo de ambiente em `postman/converto-api.postman_environment.json`.
