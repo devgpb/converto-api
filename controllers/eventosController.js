@@ -1,5 +1,6 @@
 const models = require("../models");
 const Sequelize = require('sequelize');
+const { Op } = Sequelize;
 const _upsert = require("../utils/rest").getDefaultUpsert(models.EventosUsuarioCliente, "id_evento");
 // const { formatarParaBanco, convertUTCtoLocal } = require("../utils/utils");
 // const { estadosPedidos, listaEmails, mapaStatusData, datasPedidos } = require('./constantes');
