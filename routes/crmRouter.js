@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const crmController = require('../controllers/crmController');
-const auth = require('../auth/auth-middleware');
+const { authenticateToken } = require('../middleware/auth');
 
 
-router.get('/contatos', auth.verifyToken,crmController.pesquisarNumero);
-router.post('/cliente/primeiro-contato', auth.verifyToken,crmController.marcarPrimeiraMensagemDia);
+router.get('/contatos', authenticateToken, crmController.pesquisarNumero);
+router.post('/cliente/primeiro-contato', authenticateToken, crmController.marcarPrimeiraMensagemDia);
 
 module.exports = router;

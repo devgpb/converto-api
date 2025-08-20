@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/usuariosController')
-const auth = require('../auth/auth-middleware')
+const { authenticateToken } = require('../middleware/auth')
 
 
 // Rotas para CRUD de usuários
-router.post('/', auth.verifyToken, UserController.createUser);
-router.get('/', auth.verifyToken, UserController.getAllUsers);
-router.get('/colaboradores', auth.verifyToken, UserController.getColaboradores);
+router.post('/', authenticateToken, UserController.createUser);
+router.get('/', authenticateToken, UserController.getAllUsers);
+router.get('/colaboradores', authenticateToken, UserController.getColaboradores);
 
 
-router.get('/:id', auth.verifyToken, UserController.getUserById);
-router.put('/:id', auth.verifyToken, UserController.updateUser);
-router.delete('/:id', auth.verifyToken, UserController.deleteUser);
+router.get('/:id', authenticateToken, UserController.getUserById);
+router.put('/:id', authenticateToken, UserController.updateUser);
+router.delete('/:id', authenticateToken, UserController.deleteUser);
 
 module.exports = router;
