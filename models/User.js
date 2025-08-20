@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      unique: true,
     },
     tenant_id: {
       type: DataTypes.UUID,
