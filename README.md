@@ -76,6 +76,27 @@ npm start
 - `POST /api/seats/add` - Adicionar assento
 - `POST /api/seats/remove` - Remover assento
 
+#### Clientes
+- `POST /api/clientes` - Criar ou atualizar cliente
+- `GET /api/clientes` - Listar clientes com filtros
+- `DELETE /api/clientes/:id` - Remover cliente
+- `POST /api/clientes/bulk` - Importar clientes via CSV
+- `POST /api/clientes/eventos` - Registrar evento para cliente
+- `GET /api/clientes/eventos` - Listar eventos do usuário
+- `POST /api/clientes/dashboard` - Consolidar dados do dashboard
+
+#### CRM
+- `GET /api/crm/contatos` - Pesquisar número no CRM
+- `POST /api/crm/cliente/primeiro-contato` - Marcar primeiro contato do dia
+
+#### Usuários
+- `POST /api/usuarios` - Criar usuário
+- `GET /api/usuarios` - Listar usuários
+- `GET /api/usuarios/colaboradores` - Listar colaboradores
+- `GET /api/usuarios/:id` - Buscar usuário por ID
+- `PUT /api/usuarios/:id` - Atualizar usuário
+- `DELETE /api/usuarios/:id` - Deletar usuário
+
 #### Webhook
 - `POST /api/stripe/webhook` - Webhook do Stripe
 

@@ -119,6 +119,7 @@ exports.postClientes = async (req, res) => {
   }
 };
 
+// Lista clientes com filtros de busca e ordenação
 exports.getClientes = async (req, res) => {
     try {
         const { search, status, cidade, sortBy, id_usuario } = req.query;
@@ -174,7 +175,7 @@ exports.getClientes = async (req, res) => {
     }
 };
 
-
+// Remove um cliente pelo ID utilizando soft delete
 exports.deleteCliente = async (req, res) => {
     try {
         const { id } = req.params;
@@ -192,7 +193,7 @@ exports.deleteCliente = async (req, res) => {
     }
 };
 
-
+// Retorna listas de status e cidades disponíveis para filtros
 exports.getFiltros = async (req, res) => {
   try {
     const statusData = await models.Clientes.aggregate('status', 'DISTINCT', { plain: false });
@@ -222,6 +223,7 @@ exports.getFiltros = async (req, res) => {
   }
 };
 
+// Importa clientes em massa a partir de um arquivo CSV
 exports.postBulkClientes = async (req, res) => {
   try {
     // 1) valida upload
@@ -410,7 +412,7 @@ exports.deleteEvento = async (req, res) => {
   }
 };
 
-
+// Confirma um evento previamente registrado
 exports.confirmarEvento = async (req, res) => {
   try {
     const { id } = req.params;
@@ -509,6 +511,7 @@ function bounds(periodo = 'hoje') {
   }
 }
 
+// Consolida dados estatísticos para o dashboard
 exports.getDashboard = async (req, res) => {
   try {
     const { periodo = 'hoje' } = req.body;
