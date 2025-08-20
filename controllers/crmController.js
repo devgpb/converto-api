@@ -1,6 +1,7 @@
 const { Op, fn, col, where } = require('sequelize');
 const models = require("../models");
 
+// Pesquisa um cliente pelo número de telefone normalizado
 exports.pesquisarNumero = async (req, res) => {
   try {
     // 1) pega só dígitos
@@ -65,6 +66,7 @@ exports.pesquisarNumero = async (req, res) => {
   }
 };
 
+// Marca o registro do primeiro contato do dia para um cliente
 exports.marcarPrimeiraMensagemDia = async (req, res) => {
   try {
     const { id_cliente } = req.body;

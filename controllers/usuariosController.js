@@ -4,7 +4,7 @@ const saltRounds = 10;
 const generateShortCode = require('../utils/rest').generateShortCode
 
 
-
+// Busca usuários filtrando pelo cargo informado
 async function getUserByCargo(req, res, cargo){
   try {
     const users = await models.User.findAll({
@@ -58,6 +58,7 @@ async function getUserByCargo(req, res, cargo){
     }
   };
 
+  // Lista usuários com cargo de colaborador
   exports.getColaboradores = async (req, res) => {
     getUserByCargo(req, res, "COLABORADOR")
   };

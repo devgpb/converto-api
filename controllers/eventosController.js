@@ -60,6 +60,7 @@ exports.listarEventosIntervalo = async (req, res) => {
   }
 };
 
+// Cria ou atualiza um evento convertendo a data para UTC
 exports.criarEvento = async (req, res) => {
   try {
     const tz = req.body.tz || "America/Maceio";
