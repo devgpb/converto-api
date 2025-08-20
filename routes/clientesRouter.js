@@ -3,34 +3,34 @@
 const express = require('express');
 const clientesController = require('../controllers/clientesController')
 const eventosController = require('../controllers/eventosController');
-const auth = require('../auth/auth-middleware');
+const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
 
 
-router.post('/', auth.verifyToken, clientesController.postClientes);
-router.post('/eventos', auth.verifyToken, clientesController.postEvento);
-router.get('/eventos', auth.verifyToken, clientesController.getEventosUsuario);
-router.get('/eventos/intervalo', auth.verifyToken, eventosController.listarEventosIntervalo);
-router.get('/eventos/lista/cliente', auth.verifyToken, eventosController.listarEventosDoCliente);
+router.post('/', authenticateToken, clientesController.postClientes);
+router.post('/eventos', authenticateToken, clientesController.postEvento);
+router.get('/eventos', authenticateToken, clientesController.getEventosUsuario);
+router.get('/eventos/intervalo', authenticateToken, eventosController.listarEventosIntervalo);
+router.get('/eventos/lista/cliente', authenticateToken, eventosController.listarEventosDoCliente);
 
-router.delete('/eventos/:id', auth.verifyToken, clientesController.deleteEvento);
-router.post('/eventos/:id/confirmar', auth.verifyToken, clientesController.confirmarEvento);
-router.post('/eventos/:id/cancelar', auth.verifyToken, clientesController.cancelarEvento);
-router.post('/dashboard', auth.verifyToken, clientesController.getDashboard);
-router.post('/dashboard/clientes-novos', auth.verifyToken, clientesController.listClientesNovos);
-router.post('/dashboard/clientes-atendidos', auth.verifyToken, clientesController.listClientesAtendidos);
-router.post('/dashboard/clientes-fechados', auth.verifyToken, clientesController.listClientesFechados);
-router.post('/dashboard/eventos-marcados', auth.verifyToken, clientesController.listEventosMarcados);
-
-
+router.delete('/eventos/:id', authenticateToken, clientesController.deleteEvento);
+router.post('/eventos/:id/confirmar', authenticateToken, clientesController.confirmarEvento);
+router.post('/eventos/:id/cancelar', authenticateToken, clientesController.cancelarEvento);
+router.post('/dashboard', authenticateToken, clientesController.getDashboard);
+router.post('/dashboard/clientes-novos', authenticateToken, clientesController.listClientesNovos);
+router.post('/dashboard/clientes-atendidos', authenticateToken, clientesController.listClientesAtendidos);
+router.post('/dashboard/clientes-fechados', authenticateToken, clientesController.listClientesFechados);
+router.post('/dashboard/eventos-marcados', authenticateToken, clientesController.listEventosMarcados);
 
 
-router.get('/', auth.verifyToken, clientesController.getClientes);
-router.get('/filtros', auth.verifyToken, clientesController.getFiltros);
-router.delete('/:id', auth.verifyToken, clientesController.deleteCliente);
-router.post('/bulk', auth.verifyToken, clientesController.postBulkClientes);
+
+
+router.get('/', authenticateToken, clientesController.getClientes);
+router.get('/filtros', authenticateToken, clientesController.getFiltros);
+router.delete('/:id', authenticateToken, clientesController.deleteCliente);
+router.post('/bulk', authenticateToken, clientesController.postBulkClientes);
 
 
 module.exports = router;
