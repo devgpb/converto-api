@@ -5,6 +5,7 @@ API RESTful desenvolvida em Node.js/Express para gerenciamento de SaaS multi-ten
 ## Características
 
 - **Multi-tenant**: Isolamento completo de dados por empresa
+- **Empresas**: Cada tenant possui uma enterprise e usuários não administradores só acessam dados da sua própria empresa
 - **Integração Stripe**: Pagamentos, assinaturas e webhooks
 - **Modelo Per-seat**: Precificação baseada no número de usuários ativos
 - **Webhooks**: Sincronização automática com eventos do Stripe
@@ -61,9 +62,16 @@ npm start
 - `GET /api/auth/me` - Obter dados do usuário autenticado
 
 #### Tenants
-- `POST /api/tenants` - Criar novo tenant
+- `POST /api/tenants` - Criar novo tenant (cria também uma enterprise vinculada; use `enterprise_name` para definir o nome)
 - `GET /api/tenants/:id` - Buscar tenant
 - `PUT /api/tenants/:id` - Atualizar tenant
+
+#### Enterprises
+- `POST /api/enterprises` - Criar enterprise
+- `GET /api/enterprises` - Listar enterprises (usuário comum vê apenas a sua)
+- `GET /api/enterprises/:id` - Buscar enterprise
+- `PUT /api/enterprises/:id` - Atualizar enterprise
+- `DELETE /api/enterprises/:id` - Deletar enterprise
 
 #### Billing
 - `POST /api/billing/checkout` - Criar sessão de checkout
@@ -77,6 +85,7 @@ npm start
 - `POST /api/seats/remove` - Remover assento
 
 #### Clientes
+- Todas as operações são restritas à enterprise do usuário autenticado. Administradores podem acessar dados de qualquer enterprise.
 - `POST /api/clientes` - Criar ou atualizar cliente
 - `GET /api/clientes` - Listar clientes com filtros
 - `DELETE /api/clientes/:id` - Remover cliente
@@ -135,7 +144,8 @@ npm start
 POST /api/tenants
 {
   "name": "Minha Empresa",
-  "email": "contato@empresa.com"
+  "email": "contato@empresa.com",
+  "enterprise_name": "Minha Empresa"
 }
 
 // 2. Criar checkout
@@ -179,6 +189,11 @@ POST /api/billing/portal
 - `name` (VARCHAR) - Nome da empresa
 - `stripe_customer_id` (VARCHAR) - ID do customer no Stripe
 - `status_billing` (ENUM) - Status da cobrança
+
+#### enterprises
+- `id` (UUID) - PK
+- `tenant_id` (UUID) - FK para tenants
+- `name` (VARCHAR) - Nome da enterprise
 
 #### subscriptions
 - `id` (UUID) - PK
