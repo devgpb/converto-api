@@ -32,7 +32,6 @@ async function getUserByCargo(req, res, cargo){
 
       const ref = await generateShortCode()
       req.body.referencia = ref
-      console.log(req.body)
 
       const newUser = await models.User.create(req.body);
       return res.status(201).json(newUser);
