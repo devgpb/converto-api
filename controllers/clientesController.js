@@ -17,6 +17,7 @@ function validaCampo(valor) {
 exports.postClientes = async (req, res) => {
   try {
     const { celular, id_cliente, nome, status, cidade, fechado } = req.body;
+    const enterpriseId = req.enterprise ? req.enterprise.id : null;
 
     // valida nome obrigatório
     if (!nome && !id_cliente) {
@@ -31,6 +32,9 @@ exports.postClientes = async (req, res) => {
       cliente = await models.Clientes.findByPk(id_cliente);
       if(!cliente){
         return res.status(404).json({ error: "Cliente não encontrado" });
+      }
+      if(req.user.role !== 'admin' && cliente.enterprise_id !== enterpriseId){
+        return res.status(403).json({ error: 'Acesso negado' });
       }
     }
 
@@ -77,6 +81,9 @@ exports.postClientes = async (req, res) => {
 
     // monta condição: mesmo celular, não soft-deleted
     const where = { deleted_at: null };
+    if(req.user.role !== 'admin'){
+      where.enterprise_id = enterpriseId;
+    }
 
     if(celular){
       where.celular = { [Op.iLike]: celular };
@@ -110,6 +117,10 @@ exports.postClientes = async (req, res) => {
     }
     // -------------------------------------------------
 
+    if(req.user.role !== 'admin'){
+      req.body.enterprise_id = enterpriseId;
+    }
+
     // segue para o upsert
     return _upsert(req, res);
 
@@ -126,6 +137,9 @@ exports.getClientes = async (req, res) => {
         const where = {};
 
         where.deleted_at = null;
+        if (req.user.role !== 'admin') {
+            where.enterprise_id = req.enterprise.id;
+        }
 
         if(id_usuario && id_usuario != "null")
             where.id_usuario = id_usuario;
@@ -184,6 +198,9 @@ exports.deleteCliente = async (req, res) => {
         if (!cliente) {
             return res.status(404).json({ error: "Cliente não encontrado" });
         }
+        if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+            return res.status(403).json({ error: 'Acesso negado' });
+        }
 
         await cliente.destroy();
         res.json({ message: "Cliente deletado com sucesso (soft delete)" });
@@ -196,8 +213,9 @@ exports.deleteCliente = async (req, res) => {
 // Retorna listas de status e cidades disponíveis para filtros
 exports.getFiltros = async (req, res) => {
   try {
-    const statusData = await models.Clientes.aggregate('status', 'DISTINCT', { plain: false });
-    const cidadesData = await models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false });
+    const whereBase = req.user.role === 'admin' ? {} : { enterprise_id: req.enterprise.id };
+    const statusData = await models.Clientes.aggregate('status', 'DISTINCT', { plain: false, where: whereBase });
+    const cidadesData = await models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: whereBase });
 
     // monta os arrays
     const status = statusData.map(s => s.DISTINCT).filter(Boolean);
@@ -257,7 +275,7 @@ exports.postBulkClientes = async (req, res) => {
         continue;
       }
 
-      const dados = { celular, nome: formataTexto(nomeRaw) };
+      const dados = { celular, nome: formataTexto(nomeRaw), enterprise_id: req.enterprise.id };
       if (row.status)  dados.status  = formataTexto(row.status.trim());
       if (row.cidade)  dados.cidade  = formataTexto(row.cidade.trim());
       if (row.id_usuario)  dados.id_usuario  = row.id_usuario;
@@ -268,7 +286,7 @@ exports.postBulkClientes = async (req, res) => {
 
       // upsert manual
       const existente = await models.Clientes.findOne({
-        where: { celular, deleted_at: null }
+        where: { celular, deleted_at: null, enterprise_id: req.enterprise.id }
       });
 
       if (existente) {
@@ -300,6 +318,14 @@ exports.postEvento = async (req, res) => {
       return res.status(400).json({ error: 'id_usuario, id_cliente e data são obrigatórios.' });
     }
 
+    const cliente = await models.Clientes.findByPk(id_cliente);
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente não encontrado.' });
+    }
+    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
     const quando = new Date(data);
     if (isNaN(quando.getTime())) return res.status(400).json({ error: 'Data inválida.' });
 
@@ -313,7 +339,7 @@ exports.postEvento = async (req, res) => {
 
     const payload = { id_usuario, id_cliente, data: quando, evento, confirmado: null};
 
-   
+
     const eventoBanco = await models.EventosUsuarioCliente.create(payload);
 
     const completo = await models.EventosUsuarioCliente.findByPk(eventoBanco.id_evento, {
@@ -372,6 +398,7 @@ exports.getEventosUsuario = async (req, res) => {
           model: models.Clientes,
           as: "cliente",
           attributes: ["id_cliente", "nome", "celular", "cidade", "status"],
+          where: req.user.role !== 'admin' ? { enterprise_id: req.enterprise.id } : undefined,
         },
       ],
     });
@@ -399,6 +426,13 @@ exports.deleteEvento = async (req, res) => {
     if (!evento) {
       return res.status(404).json({ error: 'Evento não encontrado.' });
     }
+    const cliente = await models.Clientes.findByPk(evento.id_cliente);
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente não encontrado.' });
+    }
+    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
 
     await evento.update({
       confirmado: false,
@@ -421,6 +455,13 @@ exports.confirmarEvento = async (req, res) => {
     if (!evento) {
       return res.status(404).json({ error: 'Evento não encontrado.' });
     }
+    const cliente = await models.Clientes.findByPk(evento.id_cliente);
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente não encontrado.' });
+    }
+    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
 
     const atualizado = await evento.update({
       confirmado: true,
@@ -442,6 +483,13 @@ exports.cancelarEvento = async (req, res) => {
     const evento = await models.EventosUsuarioCliente.findByPk(id);
     if (!evento) {
       return res.status(404).json({ error: 'Evento não encontrado.' });
+    }
+    const cliente = await models.Clientes.findByPk(evento.id_cliente);
+    if (!cliente) {
+      return res.status(404).json({ error: 'Cliente não encontrado.' });
+    }
+    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
     }
 
     const atualizado = await evento.update({
@@ -518,7 +566,7 @@ exports.getDashboard = async (req, res) => {
     const { start, end } = bounds(periodo);
 
     // Filtros comuns
-    const onlyAlive = { deleted_at: null };
+    const onlyAlive = req.user.role === 'admin' ? { deleted_at: null } : { deleted_at: null, enterprise_id: req.enterprise.id };
 
     const [
       clientesNovos,
@@ -597,6 +645,7 @@ exports.getDashboard = async (req, res) => {
           data: { [Op.between]: [start, end] },
           deleted_at: null,
         },
+        include: req.user.role === 'admin' ? undefined : [{ model: models.Clientes, as: 'cliente', where: { enterprise_id: req.enterprise.id } }]
       }),
 
       // Clientes fechados no período
@@ -700,12 +749,16 @@ exports.listClientesNovos = async (req, res) => {
     perPage = Math.min(perPage, 200);
     const offset = (page - 1) * perPage;
 
+    const where = {
+      deleted_at: null,
+      created_at: { [Op.between]: [start, end] },
+    };
+    if (req.user.role !== 'admin') {
+      where.enterprise_id = req.enterprise.id;
+    }
     const { count, rows } = await models.Clientes.findAndCountAll({
       attributes: ['nome', 'updated_at', 'status', 'observacao'],
-      where: {
-        deleted_at: null,
-        created_at: { [Op.between]: [start, end] },
-      },
+      where,
       order: [['created_at', 'DESC'], ['id_cliente', 'DESC']],
       limit: perPage,
       offset,
@@ -738,12 +791,16 @@ exports.listClientesAtendidos = async (req, res) => {
     perPage = Math.min(perPage, 200);
     const offset = (page - 1) * perPage;
 
+    const where = {
+      deleted_at: null,
+      ultimo_contato: { [Op.between]: [start, end] },
+    };
+    if (req.user.role !== 'admin') {
+      where.enterprise_id = req.enterprise.id;
+    }
     const { count, rows } = await models.Clientes.findAndCountAll({
       attributes: ['nome', 'updated_at', 'status', 'observacao','ultimo_contato'],
-      where: {
-        deleted_at: null,
-        ultimo_contato: { [Op.between]: [start, end] },
-      },
+      where,
       order: [['ultimo_contato', 'DESC'], ['id_cliente', 'DESC']],
       limit: perPage,
       offset,
@@ -776,12 +833,16 @@ exports.listClientesFechados = async (req, res) => {
     perPage = Math.min(perPage, 200);
     const offset = (page - 1) * perPage;
 
+    const where = {
+      deleted_at: null,
+      fechado: { [Op.between]: [start, end] },
+    };
+    if (req.user.role !== 'admin') {
+      where.enterprise_id = req.enterprise.id;
+    }
     const { count, rows } = await models.Clientes.findAndCountAll({
       attributes: ['nome', 'updated_at', 'status', 'observacao', 'fechado'],
-      where: {
-        deleted_at: null,
-        fechado: { [Op.between]: [start, end] },
-      },
+      where,
       order: [['fechado', 'DESC'], ['id_cliente', 'DESC']],
       limit: perPage,
       offset,
@@ -814,16 +875,17 @@ exports.listEventosMarcados = async (req, res) => {
     perPage = Math.min(perPage, 200);
     const offset = (page - 1) * perPage;
 
+    const include = [
+      { model: models.User, as: 'usuario', attributes: ['name'], required: false },
+      { model: models.Clientes, as: 'cliente', attributes: ['nome'], required: false, where: req.user.role !== 'admin' ? { enterprise_id: req.enterprise.id } : undefined }
+    ];
     const { count, rows } = await models.EventosUsuarioCliente.findAndCountAll({
       attributes: ['data', 'evento', 'confirmado'],
       where: {
         deleted_at: null,
         data: { [Op.between]: [start, end] },
       },
-      include: [
-        { model: models.User, as: 'usuario', attributes: ['name'], required: false },
-        { model: models.Clientes, as: 'cliente', attributes: ['nome'], required: false }
-      ],
+      include,
       order: [['data', 'DESC'], ['id_evento', 'DESC']],
       limit: perPage,
       offset,

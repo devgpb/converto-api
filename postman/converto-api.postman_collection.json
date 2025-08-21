@@ -80,7 +80,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Empresa Exemplo\",\n  \"email\": \"contato@empresa.com\"\n}"
+              "raw": "{\n  \"name\": \"Empresa Exemplo\",\n  \"email\": \"contato@empresa.com\",\n  \"enterprise_name\": \"Empresa Exemplo\"\n}"
             },
             "url": "{{base_url}}/api/tenants"
           }
@@ -108,6 +108,71 @@
               "raw": "{\n  \"name\": \"Empresa Atualizada\"\n}"
             },
             "url": "{{base_url}}/api/tenants/{{tenant_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enterprises",
+      "item": [
+        {
+          "name": "Create Enterprise",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nova Empresa\"\n}"
+            },
+            "url": "{{base_url}}/api/enterprises"
+          }
+        },
+        {
+          "name": "List Enterprises",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": "{{base_url}}/api/enterprises"
+          }
+        },
+        {
+          "name": "Get Enterprise",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": "{{base_url}}/api/enterprises/{{enterprise_id}}"
+          }
+        },
+        {
+          "name": "Update Enterprise",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Empresa Atualizada\"\n}"
+            },
+            "url": "{{base_url}}/api/enterprises/{{enterprise_id}}"
+          }
+        },
+        {
+          "name": "Delete Enterprise",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": "{{base_url}}/api/enterprises/{{enterprise_id}}"
           }
         }
       ]

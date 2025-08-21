@@ -1,4 +1,4 @@
-const { Tenant } = require('../models');
+const { Tenant, Enterprise } = require('../models');
 const stripe = require('../utils/stripe');
 
 /**
@@ -6,7 +6,7 @@ const stripe = require('../utils/stripe');
  */
 const createTenant = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, enterprise_name } = req.body;
 
     // Criar customer no Stripe
     const stripeCustomer = await stripe.customers.create({
@@ -22,6 +22,12 @@ const createTenant = async (req, res) => {
       name: name,
       stripe_customer_id: stripeCustomer.id,
       status_billing: 'incomplete'
+    });
+
+    // Criar enterprise associada
+    await Enterprise.create({
+      tenant_id: tenant.id,
+      name: enterprise_name || name,
     });
 
     res.status(201).json({
