@@ -177,7 +177,7 @@ exports.getClientes = async (req, res) => {
             include: [{
                 model: models.User,
                 as: 'responsavel',
-                attributes: ['name', 'id'],
+                attributes: ['name', 'id_usuario'],
             }],
             limit: 50 
         });
