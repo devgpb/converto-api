@@ -1,5 +1,6 @@
 const { Tenant, Subscription, User } = require('../models');
 const stripe = require('../utils/stripe');
+const { syncSeatsForTenant } = require('../services/seatService');
 
 /**
  * Sincroniza a quantidade de assentos pagos com o número de usuários ativos.
@@ -8,75 +9,24 @@ const stripe = require('../utils/stripe');
 const syncSeats = async (req, res) => {
   try {
     const { tenant_id } = req.body;
-
-    // Verificar se o tenant existe
-    const tenant = await Tenant.findByPk(tenant_id, {
-      include: [{
-        model: Subscription,
-        as: 'subscriptions',
-        where: { status: ['active', 'trialing'] },
-        required: false
-      }]
-    });
-
-    if (!tenant) {
-      return res.status(404).json({ error: 'Tenant não encontrado' });
-    }
-
-    const activeSubscription = tenant.subscriptions.find(sub => 
-      ['active', 'trialing'].includes(sub.status)
-    );
-
-    if (!activeSubscription) {
-      return res.status(400).json({ error: 'Nenhuma assinatura ativa encontrada para este tenant' });
-    }
-
-    // Contar usuários ativos
-    const activeUsersCount = await User.count({
-      where: {
-        tenant_id: tenant_id,
-        is_active: true
-      }
-    });
-
-    // Buscar a subscription no Stripe para obter o subscription item ID
-    const stripeSubscription = await stripe.subscriptions.retrieve(
-      activeSubscription.stripe_subscription_id
-    );
-
-    const subscriptionItemId = stripeSubscription.items.data[0].id;
-
-    // Atualizar quantidade no Stripe
-    await stripe.subscriptionItems.update(subscriptionItemId, {
-      quantity: activeUsersCount,
-      proration_behavior: 'always_invoice' // Sempre fazer proration ao adicionar
-    });
-
-    // Atualizar quantidade no banco de dados local
-    await activeSubscription.update({
-      quantity: activeUsersCount
-    });
-
-    res.json({
-      message: 'Quantidade de assentos sincronizada com sucesso',
-      tenant_id: tenant_id,
-      previous_quantity: activeSubscription.quantity,
-      new_quantity: activeUsersCount,
-      active_users_count: activeUsersCount
-    });
-
+    const result = await syncSeatsForTenant(tenant_id);
+    res.json(result);
   } catch (error) {
     console.error('Erro ao sincronizar assentos:', error);
-    
+
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
     if (error.type === 'StripeError') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Erro ao atualizar quantidade no Stripe',
-        details: error.message 
+        details: error.message
       });
     }
 
-    res.status(500).json({ 
-      error: 'Erro interno do servidor ao sincronizar assentos' 
+    res.status(500).json({
+      error: 'Erro interno do servidor ao sincronizar assentos'
     });
   }
 };
@@ -155,12 +105,31 @@ const addSeat = async (req, res) => {
     await user.update({ is_active: true });
 
     // Sincronizar assentos automaticamente
-    await syncSeats({ body: { tenant_id } }, res);
+    await syncSeatsForTenant(tenant_id);
+
+    res.json({
+      message: 'Assento adicionado e sincronizado com sucesso',
+      user_id: user_id,
+      tenant_id: tenant_id,
+      user_active: true
+    });
 
   } catch (error) {
     console.error('Erro ao adicionar assento:', error);
-    res.status(500).json({ 
-      error: 'Erro interno do servidor ao adicionar assento' 
+
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    if (error.type === 'StripeError') {
+      return res.status(400).json({
+        error: 'Erro ao atualizar quantidade no Stripe',
+        details: error.message
+      });
+    }
+
+    res.status(500).json({
+      error: 'Erro interno do servidor ao adicionar assento'
     });
   }
 };
