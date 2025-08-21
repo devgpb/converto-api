@@ -14,6 +14,7 @@ const webhookRoutes = require('./routes/webhook');
 const clientesRoutes = require('./routes/clientesRouter')
 const crmRoutes = require('./routes/crmRouter')
 const usuariosRoutes = require('./routes/usuariosRouter')
+const enterpriseRoutes = require('./routes/enterprises');
 
 
 const authRoutes = require('./routes/auth');
@@ -47,6 +48,7 @@ app.use('/api/seats', seatRoutes);
 app.use('/api/clientes',clientesRoutes)
 app.use('/api/crm',crmRoutes)
 app.use('/api/usuarios',usuariosRoutes)
+app.use('/api/enterprises', enterpriseRoutes);
 
 
 app.use('/api/auth', authRoutes);

@@ -63,6 +63,14 @@ module.exports = (sequelize, DataTypes) => {
     deleted_at: {
       type: DataTypes.DATE,
       allowNull: true
+    },
+    enterprise_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'enterprises',
+        key: 'id',
+      },
     }
   }, {
     tableName: 'clientes',
@@ -90,6 +98,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'id_cliente',
       otherKey: 'id_usuario',
       as: 'usuariosEventos',
+    });
+    Clientes.belongsTo(models.Enterprise, {
+      foreignKey: 'enterprise_id',
+      as: 'enterprise',
     });
   };
 

@@ -38,6 +38,7 @@ exports.pesquisarNumero = async (req, res) => {
     const cliente = await models.Clientes.findOne({
       where: {
         deleted_at: null,
+        ...(req.user.role !== 'admin' ? { enterprise_id: req.enterprise.id } : {}),
         [Op.or]: [
           { celular: celularFormatado },
           where(
@@ -50,7 +51,7 @@ exports.pesquisarNumero = async (req, res) => {
         model: models.User,
         as: 'responsavel',
         attributes: ['name', 'id_usuario'],
-      }] 
+      }]
     });
 
     if (!cliente) {
@@ -73,6 +74,9 @@ exports.marcarPrimeiraMensagemDia = async (req, res) => {
     const cliente = await models.Clientes.findByPk(id_cliente);
     if (!cliente) {
       return res.status(404).json({ message: "Cliente não encontrado" });
+    }
+    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ message: 'Acesso negado' });
     }
 
     cliente.ultimo_contato = new Date();

@@ -33,6 +33,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'tenant_id',
       as: 'users',
     });
+    Tenant.hasOne(models.Enterprise, {
+      foreignKey: 'tenant_id',
+      as: 'enterprise',
+    });
   };
 
   return Tenant;
