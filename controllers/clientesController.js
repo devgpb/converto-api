@@ -36,6 +36,8 @@ exports.postClientes = async (req, res) => {
       if(req.user.role !== 'admin' && cliente.enterprise_id !== enterpriseId){
         return res.status(403).json({ error: 'Acesso negado' });
       }
+    }else{
+      req.body.id_usuario = req.user.id_usuario;
     }
 
 
