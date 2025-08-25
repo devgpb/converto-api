@@ -39,6 +39,10 @@ cp .env.example .env
    - `STRIPE_SECRET_KEY`: Sua chave secreta do Stripe
    - `STRIPE_WEBHOOK_SECRET`: Secret do webhook configurado no Stripe
 
+6. Configure as credenciais de email no `.env` para envio de notificações:
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+   - `SMTP_FROM` (remetente padrão) e `SMTP_SECURE` (`true` para TLS)
+
 ## Execução
 
 ### Desenvolvimento
@@ -59,6 +63,10 @@ npm start
 - `POST /api/auth/register` - Registrar novo usuário
 - `POST /api/auth/login` - Autenticar e obter token JWT
 - `GET /api/auth/me` - Obter dados do usuário autenticado
+
+#### Perfil
+- `GET /api/profile` - Obter dados do perfil do usuário autenticado; admins recebem informações de assentos
+- `PUT /api/profile/password` - Trocar senha do usuário autenticado com confirmação por email
 
 #### Tenants
 - `POST /api/tenants` - Criar novo tenant

@@ -15,6 +15,7 @@ const clientesRoutes = require('./routes/clientesRouter')
 const crmRoutes = require('./routes/crmRouter')
 const usuariosRoutes = require('./routes/usuariosRouter')
 const enterpriseRoutes = require('./routes/enterprises');
+const profileRoutes = require('./routes/profile');
 
 
 const authRoutes = require('./routes/auth');
@@ -49,6 +50,7 @@ app.use('/api/clientes',clientesRoutes)
 app.use('/api/crm',crmRoutes)
 app.use('/api/usuarios',usuariosRoutes)
 app.use('/api/enterprises', enterpriseRoutes);
+app.use('/api/profile', profileRoutes);
 
 
 app.use('/api/auth', authRoutes);
@@ -73,7 +75,8 @@ app.get('/', (req, res) => {
       billing: '/api/billing',
       seats: '/api/seats',
       webhook: '/api/stripe/webhook',
-      auth: '/api/auth'
+      auth: '/api/auth',
+      profile: '/api/profile'
     }
   });
 });
