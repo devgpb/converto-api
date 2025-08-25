@@ -145,9 +145,49 @@
 				}
 			]
 		},
-		{
-			"name": "Tenants",
-			"item": [
+               {
+                       "name": "Profile",
+                       "item": [
+                               {
+                                       "name": "Get Profile",
+                                       "request": {
+                                               "method": "GET",
+                                               "header": [
+                                                       { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+                                               ],
+                                               "url": {
+                                                       "raw": "{{base_url}}/api/profile",
+                                                       "host": ["{{base_url}}"],
+                                                       "path": ["api", "profile"]
+                                               }
+                                       },
+                                       "response": []
+                               },
+                               {
+                                       "name": "Change Password",
+                                       "request": {
+                                               "method": "PUT",
+                                               "header": [
+                                                       { "key": "Content-Type", "value": "application/json" },
+                                                       { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+                                               ],
+                                               "body": {
+                                                       "mode": "raw",
+                                                       "raw": "{\\n  \\\"oldPassword\\\": \\\"123123\\\",\\n  \\\"newPassword\\\": \\\"novaSenha123\\\"\\n}"
+                                               },
+                                               "url": {
+                                                       "raw": "{{base_url}}/api/profile/password",
+                                                       "host": ["{{base_url}}"],
+                                                       "path": ["api", "profile", "password"]
+                                               }
+                                       },
+                                       "response": []
+                               }
+                       ]
+               },
+               {
+                       "name": "Tenants",
+                       "item": [
 				{
 					"name": "Create Tenant",
 					"event": [
