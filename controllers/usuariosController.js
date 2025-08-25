@@ -5,10 +5,10 @@ const generateShortCode = require('../utils/rest').generateShortCode
 
 
 // Busca usuários filtrando pelo cargo informado
-async function getUserByCargo(req, res, cargo){
+async function getUserByRole(req, res, role){
   try {
     const users = await models.User.findAll({
-      where:{cargo: cargo}
+      where:{role: role}
     });
     return res.status(200).json(users);
   } catch (error) {
@@ -59,7 +59,7 @@ async function getUserByCargo(req, res, cargo){
 
   // Lista usuários com cargo de colaborador
   exports.getColaboradores = async (req, res) => {
-    getUserByCargo(req, res, "COLABORADOR")
+    getUserByRole(req, res, "COLABORADOR")
   };
   
   // READ - Busca um usuário por ID

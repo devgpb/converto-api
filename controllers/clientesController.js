@@ -576,7 +576,6 @@ exports.getDashboard = async (req, res) => {
       totalClientes,
       clientesPendentes,
       orcamentosEnviados,
-      clientesExpansao,
       statusRaw,
       campanhaRaw,
       eventosMarcados,
@@ -610,11 +609,6 @@ exports.getDashboard = async (req, res) => {
       // Orçamentos enviados (boolean)
       models.Clientes.count({
         where: { ...onlyAlive, orcamento_enviado: true },
-      }),
-
-      // Clientes de expansão (boolean)
-      models.Clientes.count({
-        where: { ...onlyAlive, expansao: true },
       }),
 
       // Distribuição por status (group by status)
@@ -718,7 +712,6 @@ exports.getDashboard = async (req, res) => {
       totalClientesCadastrados: totalClientes,
       clientesPendentes,
       orcamentosEnviados,
-      clientesExpansao,
       statusDistribution,
       campanhaDistribution,
       eventosMarcados,
