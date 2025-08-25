@@ -6,7 +6,8 @@
     "start": "nodemon server.js",
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "node migrations/init.js",
+    "migrar": "npx sequelize db:migrate",
+    "migration": "sequelize migration:create --name",
     "migrate:reset-token": "node migrations/add-reset-token-fields.js"
   },
   "keywords": [
@@ -40,6 +41,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "sequelize-cli": "^6.6.3"
   }
 }
