@@ -67,6 +67,8 @@ npm start
 #### Perfil
 - `GET /api/profile` - Obter dados do perfil do usuário autenticado; admins recebem informações de assentos
 - `PUT /api/profile/password` - Trocar senha do usuário autenticado com confirmação por email
+- `POST /api/profile/forgot-password` - Solicitar link de recuperação de senha
+- `POST /api/profile/reset-password` - Redefinir senha utilizando token enviado por email
 
 #### Tenants
 - `POST /api/tenants` - Criar novo tenant

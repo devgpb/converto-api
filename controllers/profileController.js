@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { Op } = require('sequelize');
 const { User, Tenant, Subscription } = require('../models');
 const { sendMail } = require('../utils/email');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
 const getProfile = async (req, res) => {
   try {
@@ -92,7 +95,64 @@ const changePassword = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email é obrigatório' });
+  }
+
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 3600000);
+      await user.update({ reset_token: token, reset_token_expires: expires });
+      const link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+      try {
+        await sendPasswordResetEmail(user, link);
+      } catch (emailError) {
+        console.error('Erro ao enviar email de recuperação:', emailError);
+      }
+    }
+
+    res.json({ message: 'Se o email existir em nossa base, enviaremos instruções de recuperação.' });
+  } catch (error) {
+    console.error('Erro ao solicitar recuperação de senha:', error);
+    res.status(500).json({ error: 'Erro interno do servidor ao solicitar recuperação de senha' });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
+  }
+
+  try {
+    const user = await User.findOne({
+      where: {
+        reset_token: token,
+        reset_token_expires: { [Op.gt]: new Date() }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido ou expirado' });
+    }
+
+    const password_hash = await bcrypt.hash(newPassword, 10);
+    await user.update({ password_hash, reset_token: null, reset_token_expires: null });
+
+    res.json({ message: 'Senha redefinida com sucesso' });
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    res.status(500).json({ error: 'Erro interno do servidor ao redefinir senha' });
+  }
+};
+
 module.exports = {
   getProfile,
-  changePassword
+  changePassword,
+  forgotPassword,
+  resetPassword
 };

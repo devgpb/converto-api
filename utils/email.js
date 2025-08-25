@@ -10,14 +10,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const sendMail = async (to, subject, text) => {
+const sendMail = async (to, subject, text, html) => {
   if (!to) return;
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to,
       subject,
-      text
+      text,
+      html
     });
   } catch (error) {
     console.error('Erro ao enviar email:', error);

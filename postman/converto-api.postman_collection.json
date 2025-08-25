@@ -182,6 +182,44 @@
                                                }
                                        },
                                        "response": []
+                               },
+                               {
+                                       "name": "Forgot Password",
+                                       "request": {
+                                               "method": "POST",
+                                               "header": [
+                                                       { "key": "Content-Type", "value": "application/json" }
+                                               ],
+                                               "body": {
+                                                       "mode": "raw",
+                                                       "raw": "{\\n  \\\"email\\\": \\\"usuario@example.com\\\"\\n}"
+                                               },
+                                               "url": {
+                                                       "raw": "{{base_url}}/api/profile/forgot-password",
+                                                       "host": ["{{base_url}}"],
+                                                       "path": ["api", "profile", "forgot-password"]
+                                               }
+                                       },
+                                       "response": []
+                               },
+                               {
+                                       "name": "Reset Password",
+                                       "request": {
+                                               "method": "POST",
+                                               "header": [
+                                                       { "key": "Content-Type", "value": "application/json" }
+                                               ],
+                                               "body": {
+                                                       "mode": "raw",
+                                                       "raw": "{\\n  \\\"token\\\": \\\"<token>\\\",\\n  \\\"newPassword\\\": \\\"novaSenha123\\\"\\n}"
+                                               },
+                                               "url": {
+                                                       "raw": "{{base_url}}/api/profile/reset-password",
+                                                       "host": ["{{base_url}}"],
+                                                       "path": ["api", "profile", "reset-password"]
+                                               }
+                                       },
+                                       "response": []
                                }
                        ]
                },
