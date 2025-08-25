@@ -3,6 +3,8 @@ const router = express.Router();
 const { createTenant, getTenant, updateTenant } = require('../controllers/tenantController');
 const { validateTenantCreation } = require('../middleware/validation');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { requireActiveSubscription } = require('../middleware/subscription');
+
 
 // POST /api/tenants - Criar novo tenant
 router.post('/', validateTenantCreation, createTenant);
