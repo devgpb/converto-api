@@ -44,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     tableName: 'eventos_usuarios_clientes',
-    underscored: false,
+    underscored: true,
     paranoid: true,
     timestamps: true,
   });

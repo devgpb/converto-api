@@ -17,7 +17,9 @@ function validaCampo(valor) {
 exports.postClientes = async (req, res) => {
   try {
     const { celular, id_cliente, nome, status, cidade, fechado } = req.body;
-    const enterpriseId = req.enterprise ? req.enterprise.id : null;
+    const enterpriseId = req.user?.tenant?.enterprise?.id;
+
+    console.log("\n\n", enterpriseId)
 
     // valida nome obrigatório
     if (!nome && !id_cliente) {
@@ -119,9 +121,7 @@ exports.postClientes = async (req, res) => {
     }
     // -------------------------------------------------
 
-    if(req.user.role !== 'admin'){
-      req.body.enterprise_id = enterpriseId;
-    }
+    req.body.enterprise_id = enterpriseId;
 
     // segue para o upsert
     return _upsert(req, res);

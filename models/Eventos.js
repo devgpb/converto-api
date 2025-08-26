@@ -35,6 +35,7 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'eventos',
         modelName: 'Eventos',
         paranoid: true,  // Modo paranoia ativado para soft deletes usando o campo "deleted_at"
+        underscored: true,
         timestamps: true  // Garante os campos created_at e updated_at
     });
 
