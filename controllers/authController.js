@@ -16,10 +16,11 @@ const generateToken = (user) => {
 /**
  * Registra um novo usuário vinculado a um tenant existente.
  * Valida campos obrigatórios, cria o usuário e retorna um token JWT.
+ * O primeiro usuário de cada tenant recebe papel de administrador.
  */
 const register = async (req, res) => {
   try {
-    const { tenant_id, email, password, name, role } = req.body;
+    const { tenant_id, email, password, name } = req.body;
 
     if (!tenant_id || !email || !password || !name) {
       return res.status(400).json({ error: 'tenant_id, email, senha e nome são obrigatórios' });
@@ -32,11 +33,16 @@ const register = async (req, res) => {
 
     const password_hash = await bcrypt.hash(password, 10);
 
+    // Verifica quantos usuários já existem para este tenant.
+    // Se não houver nenhum, o novo usuário será administrador.
+    const existingUsers = await User.count({ where: { tenant_id } });
+    const userRole = existingUsers === 0 ? 'admin' : 'member';
+
     const user = await User.create({
       tenant_id,
       email,
       name,
-      role: role || 'member',
+      role: userRole,
       password_hash
     });
 
