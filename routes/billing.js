@@ -15,7 +15,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 router.post('/checkout', validateCheckoutCreation, createCheckoutSession);
 
 // POST /api/billing/portal - Criar portal session
-router.post('/portal', authenticateToken, requireRole(['admin']), validatePortalRequest, createPortalSession);
+router.post('/portal', authenticateToken, requireRole(['admin', 'moderator']), validatePortalRequest, createPortalSession);
 
 // GET /api/billing/status/:tenant_id - Buscar status da assinatura
 router.get('/status/:tenant_id', authenticateToken, getSubscriptionStatus);
