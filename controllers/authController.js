@@ -8,9 +8,16 @@ const { User, Tenant } = require('../models');
  * @returns {string} Token JWT válido por 1 hora.
  */
 const generateToken = (user) => {
-  return jwt.sign({ userId: user.id_usuario }, process.env.JWT_SECRET, {
-    expiresIn: '7d'
-  });
+  return jwt.sign(
+    {
+      userId: user.id_usuario,
+      tenant_id: user.tenant_id,   // 👈 agora vem no payload
+      role: user.role,
+      email: user.email
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 };
 
 /**
