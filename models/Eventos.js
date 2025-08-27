@@ -1,7 +1,7 @@
 module.exports = (sequelize, DataTypes) => {
     const Eventos = sequelize.define("Eventos", {
         id_evento: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
             autoIncrement: true,
             allowNull: false

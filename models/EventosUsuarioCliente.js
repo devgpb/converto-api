@@ -3,16 +3,16 @@
 module.exports = (sequelize, DataTypes) => {
   const EventosUsuarioCliente = sequelize.define('EventosUsuarioCliente', {
     id_evento: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       primaryKey: true,
       autoIncrement: true,
     },
     id_usuario: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     id_cliente: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     data: {

@@ -9,7 +9,7 @@ const { User, Tenant } = require('../models');
  */
 const generateToken = (user) => {
   return jwt.sign({ userId: user.id_usuario }, process.env.JWT_SECRET, {
-    expiresIn: '1h'
+    expiresIn: '7d'
   });
 };
 
