@@ -99,6 +99,10 @@ npm start
 - `GET /api/crm/contatos` - Pesquisar número no CRM
 - `POST /api/crm/cliente/primeiro-contato` - Marcar primeiro contato do dia
 
+#### Sugestões
+- `POST /api/sugestoes` - Enviar comentário, sugestão ou bug
+- `GET /api/sugestoes` - Listar sugestões enviadas (somente moderadores)
+
 #### Usuários
 - `POST /api/usuarios` - Criar usuário
 - `GET /api/usuarios` - Listar usuários
@@ -198,6 +202,12 @@ POST /api/billing/portal
 - `quantity` (INTEGER) - Número de assentos
 - `status` (ENUM) - Status da assinatura
 - `current_period_end` (TIMESTAMP) - Fim do período atual
+
+#### sugestoes
+- `id_sugestao` (INTEGER) - PK
+- `id_usuario` (UUID) - FK para users
+- `tipo` (ENUM) - Pode ser `Comentário`, `Sugestão` ou `Bug`
+- `mensagem` (STRING) - Texto de até 800 caracteres
 
 #### users
 - `id` (UUID) - PK
