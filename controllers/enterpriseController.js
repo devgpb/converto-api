@@ -7,7 +7,7 @@ const createEnterprise = async (req, res) => {
       return res.status(400).json({ error: 'Nome é obrigatório' });
     }
 
-    const targetTenantId = req.user.role === 'admin' && tenant_id ? tenant_id : req.tenant.id;
+    const targetTenantId = req.user.role === 'moderator' && tenant_id ? tenant_id : req.tenant.id;
 
     const existing = await Enterprise.findOne({ where: { tenant_id: targetTenantId } });
     if (existing) {
@@ -24,7 +24,7 @@ const createEnterprise = async (req, res) => {
 
 const listEnterprises = async (req, res) => {
   try {
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'moderator') {
       const enterprises = await Enterprise.findAll();
       return res.json(enterprises);
     }
@@ -49,7 +49,7 @@ const getEnterprise = async (req, res) => {
       return res.status(404).json({ error: 'Enterprise não encontrada' });
     }
 
-    if (req.user.role !== 'admin' && enterprise.tenant_id !== req.tenant.id) {
+    if (req.user.role !== 'moderator' && enterprise.tenant_id !== req.tenant.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -70,7 +70,7 @@ const updateEnterprise = async (req, res) => {
       return res.status(404).json({ error: 'Enterprise não encontrada' });
     }
 
-    if (req.user.role !== 'admin' && enterprise.tenant_id !== req.tenant.id) {
+    if (req.user.role !== 'moderator' && enterprise.tenant_id !== req.tenant.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -91,7 +91,7 @@ const deleteEnterprise = async (req, res) => {
       return res.status(404).json({ error: 'Enterprise não encontrada' });
     }
 
-    if (req.user.role !== 'admin' && enterprise.tenant_id !== req.tenant.id) {
+    if (req.user.role !== 'moderator' && enterprise.tenant_id !== req.tenant.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 

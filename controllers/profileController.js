@@ -20,7 +20,7 @@ const getProfile = async (req, res) => {
       enterprise: req.enterprise ? { id: req.enterprise.id, name: req.enterprise.name } : null
     };
 
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'moderator') {
       const tenant = await Tenant.findByPk(req.user.tenant_id, {
         include: [
           {

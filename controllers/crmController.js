@@ -38,7 +38,7 @@ exports.pesquisarNumero = async (req, res) => {
     const cliente = await models.Clientes.findOne({
       where: {
         deleted_at: null,
-        ...(req.user.role !== 'admin' ? { enterprise_id: req.enterprise.id } : {}),
+        ...(req.user.role !== 'moderator' ? { enterprise_id: req.enterprise.id } : {}),
         [Op.or]: [
           { celular: celularFormatado },
           where(
@@ -75,7 +75,7 @@ exports.marcarPrimeiraMensagemDia = async (req, res) => {
     if (!cliente) {
       return res.status(404).json({ message: "Cliente não encontrado" });
     }
-    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ message: 'Acesso negado' });
     }
 

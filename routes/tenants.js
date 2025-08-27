@@ -13,7 +13,7 @@ router.post('/', validateTenantCreation, createTenant);
 router.get('/:id', authenticateToken, getTenant);
 
 // PUT /api/tenants/:id - Atualizar tenant
-router.put('/:id', authenticateToken, requireRole(['admin']), updateTenant);
+router.put('/:id', authenticateToken, requireRole(['admin', 'moderator']), updateTenant);
 
 module.exports = router;
 

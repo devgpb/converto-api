@@ -35,7 +35,7 @@ exports.postClientes = async (req, res) => {
       if(!cliente){
         return res.status(404).json({ error: "Cliente não encontrado" });
       }
-      if(req.user.role !== 'admin' && cliente.enterprise_id !== enterpriseId){
+      if(req.user.role !== 'moderator' && cliente.enterprise_id !== enterpriseId){
         return res.status(403).json({ error: 'Acesso negado' });
       }
     }else{
@@ -85,7 +85,7 @@ exports.postClientes = async (req, res) => {
 
     // monta condição: mesmo celular, não soft-deleted
     const where = { deleted_at: null };
-    if(req.user.role !== 'admin'){
+    if(req.user.role !== 'moderator'){
       where.enterprise_id = enterpriseId;
     }
 
@@ -139,7 +139,7 @@ exports.getClientes = async (req, res) => {
         const where = {};
 
         where.deleted_at = null;
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== 'moderator') {
             where.enterprise_id = req.enterprise.id;
         }
 
@@ -200,7 +200,7 @@ exports.deleteCliente = async (req, res) => {
         if (!cliente) {
             return res.status(404).json({ error: "Cliente não encontrado" });
         }
-        if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+        if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
             return res.status(403).json({ error: 'Acesso negado' });
         }
 
@@ -215,7 +215,7 @@ exports.deleteCliente = async (req, res) => {
 // Retorna listas de status e cidades disponíveis para filtros
 exports.getFiltros = async (req, res) => {
   try {
-    const whereBase = req.user.role === 'admin' ? {} : { enterprise_id: req.enterprise.id };
+    const whereBase = req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id };
     const statusData = await models.Clientes.aggregate('status', 'DISTINCT', { plain: false, where: whereBase });
     const cidadesData = await models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: whereBase });
 
@@ -324,7 +324,7 @@ exports.postEvento = async (req, res) => {
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
-    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -400,7 +400,7 @@ exports.getEventosUsuario = async (req, res) => {
           model: models.Clientes,
           as: "cliente",
           attributes: ["id_cliente", "nome", "celular", "cidade", "status"],
-          where: req.user.role !== 'admin' ? { enterprise_id: req.enterprise.id } : undefined,
+          where: req.user.role !== 'moderator' ? { enterprise_id: req.enterprise.id } : undefined,
         },
       ],
     });
@@ -432,7 +432,7 @@ exports.deleteEvento = async (req, res) => {
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
-    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -461,7 +461,7 @@ exports.confirmarEvento = async (req, res) => {
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
-    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -490,7 +490,7 @@ exports.cancelarEvento = async (req, res) => {
     if (!cliente) {
       return res.status(404).json({ error: 'Cliente não encontrado.' });
     }
-    if (req.user.role !== 'admin' && cliente.enterprise_id !== req.enterprise.id) {
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
@@ -568,7 +568,7 @@ exports.getDashboard = async (req, res) => {
     const { start, end } = bounds(periodo);
 
     // Filtros comuns
-    const onlyAlive = req.user.role === 'admin' ? { deleted_at: null } : { deleted_at: null, enterprise_id: req.enterprise.id };
+    const onlyAlive = req.user.role === 'moderator' ? { deleted_at: null } : { deleted_at: null, enterprise_id: req.enterprise.id };
 
     const [
       clientesNovos,
@@ -641,7 +641,7 @@ exports.getDashboard = async (req, res) => {
           data: { [Op.between]: [start, end] },
           deleted_at: null,
         },
-        include: req.user.role === 'admin' ? undefined : [{ model: models.Clientes, as: 'cliente', where: { enterprise_id: req.enterprise.id } }]
+        include: req.user.role === 'moderator' ? undefined : [{ model: models.Clientes, as: 'cliente', where: { enterprise_id: req.enterprise.id } }]
       }),
 
       // Clientes fechados no período
@@ -748,7 +748,7 @@ exports.listClientesNovos = async (req, res) => {
       deleted_at: null,
       created_at: { [Op.between]: [start, end] },
     };
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'moderator') {
       where.enterprise_id = req.enterprise.id;
     }
     const { count, rows } = await models.Clientes.findAndCountAll({
@@ -790,7 +790,7 @@ exports.listClientesAtendidos = async (req, res) => {
       deleted_at: null,
       ultimo_contato: { [Op.between]: [start, end] },
     };
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'moderator') {
       where.enterprise_id = req.enterprise.id;
     }
     const { count, rows } = await models.Clientes.findAndCountAll({
@@ -832,7 +832,7 @@ exports.listClientesFechados = async (req, res) => {
       deleted_at: null,
       fechado: { [Op.between]: [start, end] },
     };
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'moderator') {
       where.enterprise_id = req.enterprise.id;
     }
     const { count, rows } = await models.Clientes.findAndCountAll({
@@ -872,7 +872,7 @@ exports.listEventosMarcados = async (req, res) => {
 
     const include = [
       { model: models.User, as: 'usuario', attributes: ['name'], required: false },
-      { model: models.Clientes, as: 'cliente', attributes: ['nome'], required: false, where: req.user.role !== 'admin' ? { enterprise_id: req.enterprise.id } : undefined }
+      { model: models.Clientes, as: 'cliente', attributes: ['nome'], required: false, where: req.user.role !== 'moderator' ? { enterprise_id: req.enterprise.id } : undefined }
     ];
     const { count, rows } = await models.EventosUsuarioCliente.findAndCountAll({
       attributes: ['data', 'evento', 'confirmado'],
