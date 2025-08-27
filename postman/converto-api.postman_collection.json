@@ -773,9 +773,69 @@
 					"response": []
 				}
 			]
-		},
-		{
-			"name": "Usuarios",
+                },
+                {
+                        "name": "Sugestões",
+                        "item": [
+                                {
+                                        "name": "Enviar Sugestão",
+                                        "request": {
+                                                "method": "POST",
+                                                "header": [
+                                                        {
+                                                                "key": "Authorization",
+                                                                "value": "Bearer {{token}}"
+                                                        },
+                                                        {
+                                                                "key": "Content-Type",
+                                                                "value": "application/json"
+                                                        }
+                                                ],
+                                                "body": {
+                                                        "mode": "raw",
+                                                        "raw": "{\n  \"tipo\": \"Sugestão\",\n  \"mensagem\": \"Texto da sugestão\"\n}"
+                                                },
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/sugestoes",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "sugestoes"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                },
+                                {
+                                        "name": "Listar Sugestões (Moderador)",
+                                        "request": {
+                                                "method": "GET",
+                                                "description": "Somente moderadores podem acessar.",
+                                                "header": [
+                                                        {
+                                                                "key": "Authorization",
+                                                                "value": "Bearer {{token}}"
+                                                        }
+                                                ],
+                                                "url": {
+                                                        "raw": "{{base_url}}/api/sugestoes",
+                                                        "host": [
+                                                                "{{base_url}}"
+                                                        ],
+                                                        "path": [
+                                                                "api",
+                                                                "sugestoes"
+                                                        ]
+                                                }
+                                        },
+                                        "response": []
+                                }
+                        ]
+                },
+                {
+                        "name": "Usuarios",
 			"item": [
 				{
 					"name": "Criar Usuário",

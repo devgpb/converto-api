@@ -16,6 +16,7 @@ const crmRoutes = require('./routes/crmRouter')
 const usuariosRoutes = require('./routes/usuariosRouter')
 const enterpriseRoutes = require('./routes/enterprises');
 const profileRoutes = require('./routes/profile');
+const sugestoesRoutes = require('./routes/sugestoesRouter');
 
 
 const authRoutes = require('./routes/auth');
@@ -51,6 +52,7 @@ app.use('/api/crm',crmRoutes)
 app.use('/api/usuarios',usuariosRoutes)
 app.use('/api/enterprises', enterpriseRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/sugestoes', sugestoesRoutes);
 
 
 app.use('/api/auth', authRoutes);
