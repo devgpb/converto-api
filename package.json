@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrar": "npx sequelize db:migrate",
     "migration": "sequelize migration:create --name",
-    "migrate:reset-token": "node migrations/add-reset-token-fields.js"
+    "migrate:reset-token": "node migrations/add-reset-token-fields.js",
+    "queue:workers": "node queues/workers/index.js"
   },
   "keywords": [
     "saas",
@@ -21,7 +22,10 @@
   "license": "MIT",
   "description": "API SaaS multi-tenant com integração Stripe para modelo per-seat",
   "dependencies": {
+    "@bull-board/api": "^6.12.7",
+    "@bull-board/express": "^6.12.7",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.58.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.1",
@@ -29,6 +33,7 @@
     "express": "^4.21.1",
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
+    "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.4.4",
     "moment-timezone": "^0.5.43",

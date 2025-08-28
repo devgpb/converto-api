@@ -17,6 +17,15 @@ const usuariosRoutes = require('./routes/usuariosRouter')
 const enterpriseRoutes = require('./routes/enterprises');
 const profileRoutes = require('./routes/profile');
 const sugestoesRoutes = require('./routes/sugestoesRouter');
+const jobsRoutes = require('./routes/jobs');
+
+require('./queues/workers');
+
+const { createBullBoard } = require('@bull-board/api');
+const { ExpressAdapter } = require('@bull-board/express');
+const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+const importQueue = require('./queues/importClientsQueue');
+const exportQueue = require('./queues/exportClientsQueue');
 
 
 const authRoutes = require('./routes/auth');
@@ -53,6 +62,7 @@ app.use('/api/usuarios',usuariosRoutes)
 app.use('/api/enterprises', enterpriseRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/sugestoes', sugestoesRoutes);
+app.use('/api/jobs', jobsRoutes);
 
 
 app.use('/api/auth', authRoutes);
@@ -65,6 +75,14 @@ app.get('/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/admin/queues');
+createBullBoard({
+  queues: [new BullMQAdapter(importQueue), new BullMQAdapter(exportQueue)],
+  serverAdapter,
+});
+app.use('/admin/queues', serverAdapter.getRouter());
 
 // Rota raiz
 app.get('/', (req, res) => {
