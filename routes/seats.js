@@ -13,7 +13,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 router.post('/sync', authenticateToken, requireRole(['admin', 'moderator']), validateSeatSync, syncSeats);
 
 // GET /api/seats/usage/:tenant_id - Buscar uso de assentos
-router.get('/usage/:tenant_id', authenticateToken, getSeatUsage);
+router.get('/usage/:tenant_id', authenticateToken, requireRole(['admin']), getSeatUsage);
 
 // POST /api/seats/add - Adicionar assento (ativar usuário)
 router.post('/add', authenticateToken, requireRole(['admin', 'moderator']), addSeat);

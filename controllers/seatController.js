@@ -39,6 +39,14 @@ const getSeatUsage = async (req, res) => {
   try {
     const { tenant_id } = req.params;
 
+    // Garantir que apenas administradores e do mesmo tenant acessem
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Permissão insuficiente' });
+    }
+    if (req.user.tenant_id !== tenant_id) {
+      return res.status(403).json({ error: 'Acesso negado a outro tenant' });
+    }
+
     const tenant = await Tenant.findByPk(tenant_id, {
       include: [{
         model: Subscription,
@@ -59,8 +67,15 @@ const getSeatUsage = async (req, res) => {
       ['active', 'trialing'].includes(sub.status)
     );
 
-    const activeUsersCount = tenant.users.filter(user => user.is_active).length;
-    const totalUsersCount = tenant.users.length;
+    const users = tenant.users.map(u => ({
+      id_usuario: u.id_usuario,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      is_active: u.is_active,
+    }));
+    const activeUsersCount = users.filter(user => user.is_active).length;
+    const totalUsersCount = users.length;
     const paidSeats = activeSubscription ? activeSubscription.quantity : 0;
 
     res.json({
@@ -70,7 +85,8 @@ const getSeatUsage = async (req, res) => {
       total_users: totalUsersCount,
       seats_available: Math.max(0, paidSeats - activeUsersCount),
       needs_sync: paidSeats !== activeUsersCount,
-      subscription_status: activeSubscription ? activeSubscription.status : 'none'
+      subscription_status: activeSubscription ? activeSubscription.status : 'none',
+      users
     });
 
   } catch (error) {
