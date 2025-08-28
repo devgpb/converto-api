@@ -73,6 +73,7 @@ const getSeatUsage = async (req, res) => {
       email: u.email,
       role: u.role,
       is_active: u.is_active,
+      principal: u.principal,
     }));
     const activeUsersCount = users.filter(user => user.is_active).length;
     const totalUsersCount = users.length;
