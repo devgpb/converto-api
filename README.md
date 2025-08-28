@@ -43,6 +43,8 @@ cp .env.example .env
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
    - `SMTP_FROM` (remetente padrão) e `SMTP_SECURE` (`true` para TLS)
 
+7. Configure o Redis (veja `tutorial-redis-local.md` para desenvolvimento ou `tutorial-redis-pm2.md` para produção) e ajuste `REDIS_URL` no `.env`
+
 ## Execução
 
 ### Desenvolvimento
@@ -113,6 +115,13 @@ npm start
 
 #### Webhook
 - `POST /api/stripe/webhook` - Webhook do Stripe
+
+#### Jobs
+- `POST /api/jobs/import-clients` - Criar job para importação de clientes
+- `POST /api/jobs/export-clients` - Criar job para exportação de clientes
+- `GET /api/jobs/:queue/:id` - Consultar status do job
+- `DELETE /api/jobs/:queue/:id` - Cancelar job
+- `GET /admin/queues` - Painel de acompanhamento dos jobs
 
 ## Configuração do Stripe
 
