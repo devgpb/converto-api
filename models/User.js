@@ -30,6 +30,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('admin', 'member', 'moderator'),
       defaultValue: 'member',
     },
+    principal: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: null,
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

@@ -21,9 +21,9 @@ const generateToken = (user) => {
 };
 
 /**
- * Registra um novo usuário vinculado a um tenant existente.
- * Valida campos obrigatórios, cria o usuário e retorna um token JWT.
- * O primeiro usuário de cada tenant recebe papel de administrador.
+ * Registra a conta primária de um tenant.
+ * Sempre cria um administrador com flag `principal` true.
+ * Se já existir um usuário principal para o tenant, o registro é negado.
  */
 const register = async (req, res) => {
   try {
@@ -38,18 +38,19 @@ const register = async (req, res) => {
       return res.status(404).json({ error: 'Tenant não encontrado' });
     }
 
-    const password_hash = await bcrypt.hash(password, 10);
+    const existingPrincipal = await User.findOne({ where: { tenant_id, principal: true } });
+    if (existingPrincipal) {
+      return res.status(403).json({ error: 'Tenant já possui um usuário principal' });
+    }
 
-    // Verifica quantos usuários já existem para este tenant.
-    // Se não houver nenhum, o novo usuário será administrador.
-    const existingUsers = await User.count({ where: { tenant_id } });
-    const userRole = existingUsers === 0 ? 'admin' : 'member';
+    const password_hash = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       tenant_id,
       email,
       name,
-      role: userRole,
+      role: 'admin',
+      principal: true,
       password_hash
     });
 
@@ -62,6 +63,7 @@ const register = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        principal: user.principal,
         tenant_id: user.tenant_id
       }
     });
@@ -111,6 +113,7 @@ const login = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        principal: user.principal,
         tenant_id: user.tenant_id
       }
     });
@@ -133,6 +136,7 @@ const me = (req, res) => {
     email: req.user.email,
     name: req.user.name,
     role: req.user.role,
+    principal: req.user.principal,
     tenant_id: req.user.tenant_id
   });
 };

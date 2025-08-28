@@ -1,0 +1,26 @@
+[
+  {
+    "ordem": 3,
+    "descricao": "Criar usuário membro",
+    "objetivo": "Adicionar novo membro ao tenant",
+    "rota": "POST /api/usuarios",
+    "recebe": ["email", "password", "name"],
+    "entrega": ["id", "email", "name", "role", "tenant_id"]
+  },
+  {
+    "ordem": 4,
+    "descricao": "Alterar role de usuário",
+    "objetivo": "Promover ou rebaixar entre admin e member",
+    "rota": "PATCH /api/usuarios/:id/role",
+    "recebe": ["role"],
+    "entrega": ["id", "role"]
+  },
+  {
+    "ordem": 5,
+    "descricao": "Remover assentos do tenant",
+    "objetivo": "Liberar ou desativar usuários",
+    "rota": "POST /api/seats/remove",
+    "recebe": ["tenant_id", "quantity"],
+    "entrega": ["seats_active"]
+  }
+]

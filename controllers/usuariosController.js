@@ -1,7 +1,6 @@
 const models = require("../models");
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
-const generateShortCode = require('../utils/rest').generateShortCode
 
 
 // Busca usuários filtrando pelo cargo informado
@@ -17,29 +16,43 @@ async function getUserByRole(req, res, role){
   }
 }
 
-// CREATE - Cria um novo usuário
-  exports.createUser = async (req, res) => {
-    try {
-      // Verifique se o email já existe no banco de dados
-    const existingUser = await models.User.findOne({ where: { email: req.body.email } });
+// CREATE - Cria um novo usuário membro dentro do tenant do administrador
+exports.createUser = async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
 
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'email, password e name são obrigatórios' });
+    }
+
+    const existingUser = await models.User.findOne({ where: { email } });
     if (existingUser) {
-      // Se o email já existir, retorne um erro
       return res.status(400).json({ error: 'Email já existe' });
     }
-      const hash = await bcrypt.hash(req.body.senha, saltRounds)
-      req.body.senha = hash
 
-      const ref = await generateShortCode()
-      req.body.referencia = ref
+    const password_hash = await bcrypt.hash(password, saltRounds);
 
-      const newUser = await models.User.create(req.body);
-      return res.status(201).json(newUser);
-    } catch (error) {
-      console.log(error)
-      return res.status(500).json({ error: 'Erro ao criar usuário' });
-    }
-  };
+    const newUser = await models.User.create({
+      tenant_id: req.user.tenant_id,
+      email,
+      name,
+      role: 'member',
+      principal: false,
+      password_hash
+    });
+
+    return res.status(201).json({
+      id: newUser.id_usuario,
+      email: newUser.email,
+      name: newUser.name,
+      role: newUser.role,
+      tenant_id: newUser.tenant_id
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Erro ao criar usuário' });
+  }
+};
 
   
   // READ - Lista todos os usuários
@@ -121,7 +134,34 @@ async function getUserByRole(req, res, role){
       return res.status(500).json({ error: 'Erro ao atualizar usuário' });
     }
   };
-  
+
+// PATCH - Atualiza a role de um usuário (apenas pelo principal)
+exports.updateUserRole = async (req, res) => {
+  try {
+    if (!req.user.principal) {
+      return res.status(403).json({ error: 'Apenas o usuário principal pode alterar roles' });
+    }
+
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!['admin', 'member'].includes(role)) {
+      return res.status(400).json({ error: 'Role inválida' });
+    }
+
+    const user = await models.User.findOne({ where: { id_usuario: id, tenant_id: req.user.tenant_id } });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    await user.update({ role });
+    return res.status(200).json({ id: user.id_usuario, role: user.role });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Erro ao atualizar role' });
+  }
+};
+
   // DELETE - Remove um usuário por ID
   exports.deleteUser = async (req, res) => {
     const { id } = req.params;
