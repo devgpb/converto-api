@@ -3,7 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
-
+const fileUpload = require('express-fileupload');
+const fs = require('fs');
 const { sequelize } = require('./models');
 
 // Importar rotas
@@ -51,6 +52,17 @@ app.use('/api/stripe', webhookRoutes);
 // Middleware para parsing JSON (após webhook)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Garante que o diretório temporário exista mesmo no Windows
+try {
+  fs.mkdirSync('/tmp/', { recursive: true });
+} catch (_) {}
+
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/',   // ou outro diretório de temp
+  createParentPath: true
+}));
 
 // Rotas da API
 app.use('/api/tenants', tenantRoutes);

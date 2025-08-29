@@ -6,6 +6,7 @@ const queues = {
   export: exportQueue,
 };
 
+
 exports.importClients = async (req, res) => {
   try {
     if (!req.files || !req.files.file) {
@@ -16,6 +17,7 @@ exports.importClients = async (req, res) => {
     const job = await importQueue.add('import', {
       filePath,
       enterpriseId: req.enterprise.id,
+      userId: req.user.id_usuario,
     });
     res.json({ id: job.id });
   } catch (err) {
@@ -26,7 +28,8 @@ exports.importClients = async (req, res) => {
 
 exports.exportClients = async (req, res) => {
   try {
-    const job = await exportQueue.add('export', req.body || {});
+    const payload = { ...(req.body || {}), userId: req.user.id_usuario };
+    const job = await exportQueue.add('export', payload);
     res.json({ id: job.id });
   } catch (err) {
     console.error('exportClients job error', err);
@@ -47,6 +50,8 @@ exports.getJobStatus = async (req, res) => {
     progress: job.progress,
     data: job.data,
     result: job.returnvalue || null,
+    failedReason: job.failedReason || null,
+    attemptsMade: job.attemptsMade,
   });
 };
 
@@ -58,4 +63,53 @@ exports.cancelJob = async (req, res) => {
   if (!job) return res.status(404).json({ error: 'Job não encontrado' });
   await job.remove();
   res.json({ success: true });
+};
+
+// Lista jobs do usuário autenticado (todas as filas)
+exports.listUserJobs = async (req, res) => {
+  try {
+    const targetUserId = (req.user.role === 'moderator' && req.query.userId) ? String(req.query.userId) : req.user.id_usuario;
+    const states = (req.query.states ? String(req.query.states).split(',') : ['waiting', 'active', 'delayed', 'completed', 'failed'])
+      .map(s => s.trim()).filter(Boolean);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+
+    const results = [];
+
+    for (const [alias, q] of Object.entries(queues)) {
+      const collected = [];
+      for (const st of states) {
+        try {
+          const jobs = await q.getJobs([st], 0, limit - 1);
+          collected.push(...jobs);
+        } catch (_) { /* ignora estados não suportados */ }
+      }
+
+      for (const job of collected) {
+        if (job?.data?.userId !== targetUserId) continue;
+        const state = await job.getState();
+        results.push({
+          queue: q.name,
+          id: job.id,
+          name: job.name,
+          state,
+          progress: job.progress,
+          data: (() => {
+            const { filePath, ...rest } = job.data || {};
+            return rest; // evita expor caminho do arquivo
+          })(),
+          failedReason: job.failedReason || null,
+          returnvalue: job.returnvalue || null,
+          timestamp: job.timestamp || null,
+          attemptsMade: job.attemptsMade || 0,
+        });
+      }
+    }
+
+    // Ordena do mais recente para o mais antigo
+    results.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    res.json({ count: results.length, jobs: results.slice(0, limit) });
+  } catch (err) {
+    console.error('listUserJobs error', err);
+    res.status(500).json({ error: 'Erro ao listar jobs do usuário' });
+  }
 };

@@ -123,6 +123,16 @@ npm start
 - `DELETE /api/jobs/:queue/:id` - Cancelar job
 - `GET /admin/queues` - Painel de acompanhamento dos jobs
 
+- `GET /api/jobs/user` - Listar jobs do usuário autenticado (todas as filas)
+##### `GET /api/jobs/user`
+- Parâmetros de query:
+  - `states`: estados separados por vírgula. Ex.: `waiting,active,completed,failed`. Padrão: todos.
+  - `limit`: quantidade máxima a retornar. Padrão: 50, máx.: 500.
+  - `userId` (opcional): somente moderadores podem consultar jobs de outro usuário (`id_usuario`).
+- Retorna para cada job: `queue`, `id`, `name`, `state`, `progress`, `data` (sem `filePath`), `failedReason`, `returnvalue`, `timestamp`, `attemptsMade`.
+
+Observação: novos jobs criados passam a registrar `userId` automaticamente a partir do usuário autenticado.
+
 ## Configuração do Stripe
 
 ### 1. Produto e Preço

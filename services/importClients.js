@@ -3,13 +3,20 @@ const fs = require('fs');
 const models = require('../models');
 const { formataTexto } = require('../utils/utils');
 
-async function importClientsFromCsv(filePath, enterpriseId) {
+async function importClientsFromCsv(filePath, enterpriseId, userId) {
   const linhas = await new Promise((resolve, reject) => {
     const resultados = [];
+    const toSnake = (s) => s
+      .trim()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .replace(/\W+/g, '_')
+      .toLowerCase();
+
     fs.createReadStream(filePath)
       .pipe(csvParser({
         separator: ';',
-        mapHeaders: ({ header }) => header.trim()
+        mapHeaders: ({ header }) => toSnake(header)
       }))
       .on('data', row => resultados.push(row))
       .on('end', () => resolve(resultados))
@@ -28,7 +35,7 @@ async function importClientsFromCsv(filePath, enterpriseId) {
     const dados = { celular, nome: formataTexto(nomeRaw), enterprise_id: enterpriseId };
     if (row.status) dados.status = formataTexto(row.status.trim());
     if (row.cidade) dados.cidade = formataTexto(row.cidade.trim());
-    if (row.id_usuario) dados.id_usuario = row.id_usuario;
+    dados.id_usuario = userId;
     if (row.indicacao) dados.indicacao = formataTexto(row.indicacao.trim());
     if (row.campanha) dados.campanha = formataTexto(row.campanha.trim());
     if (row.observacao) dados.observacao = formataTexto(row.observacao.trim());

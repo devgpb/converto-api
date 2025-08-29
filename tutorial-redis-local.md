@@ -2,6 +2,8 @@
 
 Este guia mostra como configurar o Redis para desenvolvimento local sem PM2.
 
+## Precisa do WSL!
+
 ## 1. Instalar o Redis
 
 No Ubuntu/Debian:

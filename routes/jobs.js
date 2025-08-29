@@ -6,6 +6,8 @@ const { requireActiveSubscription } = require('../middleware/subscription');
 
 router.post('/import-clients', authenticateToken, requireActiveSubscription, jobsController.importClients);
 router.post('/export-clients', authenticateToken, requireActiveSubscription, jobsController.exportClients);
+// Listar jobs do usuário autenticado (deve vir antes de rotas com params)
+router.get('/user', authenticateToken, jobsController.listUserJobs);
 router.get('/:queue/:id', jobsController.getJobStatus);
 router.delete('/:queue/:id', jobsController.cancelJob);
 

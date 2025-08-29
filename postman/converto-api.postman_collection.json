@@ -973,15 +973,16 @@
           "name": "Import Clients",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": {
               "raw": "{{base_url}}/api/jobs/import-clients",
@@ -1019,6 +1020,35 @@
                 "api",
                 "jobs",
                 "export-clients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List User Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/jobs/user?states=waiting,active,completed,failed&limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "user"
+              ],
+              "query": [
+                {
+                  "key": "states",
+                  "value": "waiting,active,completed,failed",
+                  "description": "Estados separados por vírgula"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Máximo de registros (<= 500)"
+                }
               ]
             }
           }
