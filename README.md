@@ -133,6 +133,49 @@ npm start
 
 Observação: novos jobs criados passam a registrar `userId` automaticamente a partir do usuário autenticado.
 
+##### Retorno com Metadados de Jobs
+
+Alguns jobs podem retornar metadados opcionais no resultado (`returnvalue`) quando concluídos. O endpoint `GET /api/jobs/:queue/:id` inclui o campo `result` com o retorno do job. Quando houver, o campo `metadata` segue o padrão:
+
+```
+metadata: [
+  { label: "Nome do metadado", value: <numero|texto> }
+]
+```
+
+Exemplo para o job de importação de clientes ao finalizar:
+
+```
+GET /api/jobs/import/:id
+{
+  "id": "123",
+  "state": "completed",
+  "progress": 100,
+  "data": { "enterpriseId": "...", "userId": "..." },
+  "result": {
+    "success": true,
+    "summary": {
+      "criados": 10,
+      "atualizados": 2,
+      "pulados": 1,
+      "erros": [
+        { "linha": 3, "motivo": "Falta nome ou celular" }
+      ]
+    },
+    "metadata": [
+      { "label": "Clientes Cadastrados", "value": 12 },
+      { "label": "Erros de Importação", "value": 1 }
+    ]
+  },
+  "failedReason": null,
+  "attemptsMade": 0
+}
+```
+
+Notas da importação:
+- Sucesso considera linhas criadas + atualizadas.
+- Erros contabilizam todas as linhas com falha; o processamento continua mesmo com erros por linha.
+
 ## Configuração do Stripe
 
 ### 1. Produto e Preço

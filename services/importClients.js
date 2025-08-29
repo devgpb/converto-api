@@ -25,35 +25,47 @@ async function importClientsFromCsv(filePath, enterpriseId, userId) {
 
   const resumo = { criados: 0, atualizados: 0, pulados: 0, erros: [] };
   for (let [i, row] of linhas.entries()) {
-    const celular = row.celular?.trim();
-    const nomeRaw = row.nome?.trim();
-    if (!celular || !nomeRaw) {
-      resumo.erros.push({ linha: i + 1, motivo: 'Falta nome ou celular' });
-      continue;
-    }
+    try {
+      const celular = row.celular?.trim();
+      const nomeRaw = row.nome?.trim();
+      if (!celular || !nomeRaw) {
+        resumo.erros.push({ linha: i + 1, motivo: 'Falta nome ou celular' });
+        resumo.pulados++;
+        continue;
+      }
 
-    const dados = { celular, nome: formataTexto(nomeRaw), enterprise_id: enterpriseId };
-    if (row.status) dados.status = formataTexto(row.status.trim());
-    if (row.cidade) dados.cidade = formataTexto(row.cidade.trim());
-    dados.id_usuario = userId;
-    if (row.indicacao) dados.indicacao = formataTexto(row.indicacao.trim());
-    if (row.campanha) dados.campanha = formataTexto(row.campanha.trim());
-    if (row.observacao) dados.observacao = formataTexto(row.observacao.trim());
+      const dados = { celular, nome: formataTexto(nomeRaw), enterprise_id: enterpriseId };
+      if (row.status) dados.status = formataTexto(row.status.trim());
+      if (row.cidade) dados.cidade = formataTexto(row.cidade.trim());
+      dados.id_usuario = userId;
+      if (row.indicacao) dados.indicacao = formataTexto(row.indicacao.trim());
+      if (row.campanha) dados.campanha = formataTexto(row.campanha.trim());
+      if (row.observacao) dados.observacao = formataTexto(row.observacao.trim());
 
-    const existente = await models.Clientes.findOne({
-      where: { celular, deleted_at: null, enterprise_id: enterpriseId }
-    });
+      const existente = await models.Clientes.findOne({
+        where: { celular, deleted_at: null, enterprise_id: enterpriseId }
+      });
 
-    if (existente) {
-      await existente.update(dados);
-      resumo.atualizados++;
-    } else {
-      await models.Clientes.create(dados);
-      resumo.criados++;
+      if (existente) {
+        await existente.update(dados);
+        resumo.atualizados++;
+      } else {
+        await models.Clientes.create(dados);
+        resumo.criados++;
+      }
+    } catch (err) {
+      resumo.erros.push({ linha: i + 1, motivo: err.message || 'Erro inesperado' });
     }
   }
 
-  return resumo;
+  const successCount = resumo.criados + resumo.atualizados;
+  const errorCount = resumo.erros.length;
+  const metadata = [
+    { label: 'Clientes Cadastrados', value: successCount },
+    { label: 'Erros de Importação', value: errorCount },
+  ];
+
+  return { success: true, summary: resumo, metadata };
 }
 
 module.exports = { importClientsFromCsv };

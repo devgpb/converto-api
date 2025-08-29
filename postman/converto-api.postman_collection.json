@@ -1056,6 +1056,7 @@
         {
           "name": "Get Job Status",
           "request": {
+            "description": "Retorna o status do job e, quando concluído, o campo `result` contendo metadados opcionais. Para importação de clientes, `result.metadata` inclui dois itens: Clientes Cadastrados (sucessos) e Erros de Importação (falhas por linha).",
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/jobs/import/:id",
