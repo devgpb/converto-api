@@ -1,13 +1,11 @@
-
 // pedidosRouter.js
 const express = require('express');
-const clientesController = require('../controllers/clientesController')
+const clientesController = require('../controllers/clientesController');
 const eventosController = require('../controllers/eventosController');
 const { authenticateToken } = require('../middleware/auth');
 const { requireActiveSubscription } = require('../middleware/subscription');
 
 const router = express.Router();
-
 
 
 router.post('/', authenticateToken, requireActiveSubscription, clientesController.postClientes);
@@ -27,13 +25,8 @@ router.post('/dashboard/clientes-atendidos', authenticateToken, clientesControll
 router.post('/dashboard/clientes-fechados', authenticateToken, clientesController.listClientesFechados);
 router.post('/dashboard/eventos-marcados', authenticateToken, clientesController.listEventosMarcados);
 
-
-
-
 router.get('/', authenticateToken, requireActiveSubscription, clientesController.getClientes);
 router.get('/filtros', authenticateToken, requireActiveSubscription, clientesController.getFiltros);
 router.delete('/:id', authenticateToken, requireActiveSubscription, clientesController.deleteCliente);
-router.post('/bulk', authenticateToken, requireActiveSubscription, clientesController.postBulkClientes);
-
 
 module.exports = router;

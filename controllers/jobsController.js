@@ -8,7 +8,15 @@ const queues = {
 
 exports.importClients = async (req, res) => {
   try {
-    const job = await importQueue.add('import', req.body || {});
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ error: 'Arquivo CSV é obrigatório.' });
+    }
+    const csvFile = req.files.file;
+    const filePath = csvFile.tempFilePath;
+    const job = await importQueue.add('import', {
+      filePath,
+      enterpriseId: req.enterprise.id,
+    });
     res.json({ id: job.id });
   } catch (err) {
     console.error('importClients job error', err);

@@ -3,8 +3,6 @@ const _upsert = require("../utils/rest").getDefaultUpsert(models.Clientes, "id_c
 const { Sequelize } = models
 const { Op } = Sequelize;
 const { formataTexto } = require('../utils/utils');
-const csvParser  = require('csv-parser');
-const fs  = require('fs');
 const moment = require('moment-timezone');
 
 const TZ = 'America/Maceio';
@@ -242,73 +240,6 @@ exports.getFiltros = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
-// Importa clientes em massa a partir de um arquivo CSV
-exports.postBulkClientes = async (req, res) => {
-  try {
-    // 1) valida upload
-    if (!req.files || !req.files.file) {
-      return res.status(400).json({ error: 'Arquivo CSV é obrigatório.' });
-    }
-    const csvFile = req.files.file;
-    const filePath = csvFile.tempFilePath; // veio do express-fileupload
-
-    // 2) faz o parse do CSV em memória
-    const linhas = await new Promise((resolve, reject) => {
-      const resultados = [];
-      fs.createReadStream(filePath)
-        .pipe(csvParser({
-          separator: ';',               // seu CSV é “;”
-          mapHeaders: ({ header }) => header.trim()  // limpa espaços dos nomes
-        }))
-        .on('data', row => resultados.push(row))
-        .on('end', () => resolve(resultados))
-        .on('error', err => reject(err));
-    });
-
-
-    // 3) processa cada linha
-    const resumo = { criados: 0, atualizados: 0, pulados: 0, erros: [] };
-    for (let [i, row] of linhas.entries()) {
-      const celular = row.celular?.trim();
-      const nomeRaw = row.nome?.trim();
-      if (!celular || !nomeRaw) {
-        resumo.erros.push({ linha: i+1, motivo: 'Falta nome ou celular' });
-        continue;
-      }
-
-      const dados = { celular, nome: formataTexto(nomeRaw), enterprise_id: req.enterprise.id };
-      if (row.status)  dados.status  = formataTexto(row.status.trim());
-      if (row.cidade)  dados.cidade  = formataTexto(row.cidade.trim());
-      if (row.id_usuario)  dados.id_usuario  = row.id_usuario;
-      if (row.indicacao)  dados.indicacao  = formataTexto(row.indicacao.trim());
-      if (row.campanha)  dados.campanha  = formataTexto(row.campanha.trim());
-      if (row.observacao)  dados.observacao  = formataTexto(row.observacao.trim());
-
-
-      // upsert manual
-      const existente = await models.Clientes.findOne({
-        where: { celular, deleted_at: null, enterprise_id: req.enterprise.id }
-      });
-
-      if (existente) {
-        await existente.update(dados);
-        resumo.atualizados++;
-      } else {
-        await models.Clientes.create(dados);
-        resumo.criados++;
-      }
-    }
-
-    // 4) devolve o resumo
-    return res.json(resumo);
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: error.message });
-  }
-};
-
 
 // ===== Eventos de Usuarios x Clientes =====
 
