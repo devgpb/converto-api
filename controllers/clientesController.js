@@ -130,63 +130,81 @@ exports.postClientes = async (req, res) => {
   }
 };
 
-// Lista clientes com filtros de busca e ordenação
+// Lista clientes com filtros, ordenação e paginação + meta
 exports.getClientes = async (req, res) => {
-    try {
-        const { search, status, cidade, sortBy, id_usuario } = req.query;
-        const where = {};
+  try {
+    const { search, status, cidade, sortBy, id_usuario } = req.query;
+    const where = {};
 
-        where.deleted_at = null;
-        if (req.user.role !== 'moderator') {
-            where.enterprise_id = req.enterprise.id;
-        }
-
-        if(id_usuario && id_usuario != "null")
-            where.id_usuario = id_usuario;
-
-        // Filtro por status
-        if (status && status !== "todos") {
-            where.status = { [models.Sequelize.Op.iLike]: status }; // case insensitive
-        }
-
-        // Filtro por cidade
-        if (cidade && cidade !== "todas") {
-            where.cidade = { [models.Sequelize.Op.iLike]: cidade };
-        }
-
-        // Busca geral
-        if (search) {
-            where[models.Sequelize.Op.or] = [
-                { nome: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-                { celular: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-                { campanha: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-                { status: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-                { cidade: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-                { id_cliente: !isNaN(search) ? Number(search) : -1 }
-            ];
-        }
-
-        let order = [['updated_at', 'DESC']];
-        if (sortBy === 'antigo') order = [['updated_at', 'ASC']];
-        if (sortBy === 'nome') order = [['nome', 'ASC']];
-        if (sortBy === 'id') order = [['id_cliente', 'ASC']];
-
-        const clientes = await models.Clientes.findAll({
-            where,
-            order,
-            include: [{
-                model: models.User,
-                as: 'responsavel',
-                attributes: ['name', 'id_usuario'],
-            }],
-            limit: 50 
-        });
-
-        res.json(clientes);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ error: error.message });
+    // paranoia já filtra deleted_at, mas mantemos explícito
+    where.deleted_at = null;
+    if (req.user.role !== 'moderator') {
+      where.enterprise_id = req.enterprise.id;
     }
+
+    if (id_usuario && id_usuario != "null") where.id_usuario = id_usuario;
+
+    // Filtro por status
+    if (status && status !== "todos") {
+      where.status = { [models.Sequelize.Op.iLike]: status }; // case insensitive
+    }
+
+    // Filtro por cidade
+    if (cidade && cidade !== "todas") {
+      where.cidade = { [models.Sequelize.Op.iLike]: cidade };
+    }
+
+    // Busca geral
+    if (search) {
+      where[models.Sequelize.Op.or] = [
+        { nome: { [models.Sequelize.Op.iLike]: `%${search}%` } },
+        { celular: { [models.Sequelize.Op.iLike]: `%${search}%` } },
+        { campanha: { [models.Sequelize.Op.iLike]: `%${search}%` } },
+        { status: { [models.Sequelize.Op.iLike]: `%${search}%` } },
+        { cidade: { [models.Sequelize.Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    // Ordenação
+    let order = [['updated_at', 'DESC']];
+    if (sortBy === 'antigo') order = [['updated_at', 'ASC']];
+    if (sortBy === 'nome') order = [['nome', 'ASC']];
+    if (sortBy === 'id') order = [['id_cliente', 'ASC']];
+
+    // Paginação
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    let perPage = parseInt(req.query.perPage, 10) || 50; // default 50, antes era limit fixo 50
+    if (Number.isNaN(perPage) || perPage < 1) perPage = 50;
+    perPage = Math.min(perPage, 200);
+    const offset = (page - 1) * perPage;
+
+    const { count, rows } = await models.Clientes.findAndCountAll({
+      where,
+      order,
+      include: [{
+        model: models.User,
+        as: 'responsavel',
+        attributes: ['name', 'id_usuario'],
+        required: false,
+      }],
+      limit: perPage,
+      offset,
+      distinct: true,
+    });
+
+    return res.json({
+      data: rows,
+      meta: {
+        total: count,
+        page,
+        perPage,
+        totalPages: Math.ceil(count / perPage),
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // Remove um cliente pelo ID utilizando soft delete

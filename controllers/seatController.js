@@ -68,7 +68,7 @@ const getSeatUsage = async (req, res) => {
     );
 
     const users = tenant.users.map(u => ({
-      id_usuario: u.id_usuario,
+      user_id: u.id_usuario,
       name: u.name,
       email: u.email,
       role: u.role,
