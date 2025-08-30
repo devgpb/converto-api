@@ -77,7 +77,7 @@ app.use('/api/sugestoes', sugestoesRoutes);
 app.use('/api/jobs', jobsRoutes);
 
 
-app.use('/api/auth', authRoutes);
+app.use('/api', authRoutes);
 
 // Rota de health check
 app.get('/health', (req, res) => {
