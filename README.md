@@ -327,12 +327,12 @@ Importe ambos no Postman, defina a variável `base_url` para o endereço da API 
 
 As rotas de Mensagens Automáticas permitem cadastrar textos prontos para uso em comunicações. Todas as rotas exigem autenticação via JWT e uma assinatura ativa do tenant.
 
-- Base Path: `/apo/mensagens-padrao` (conforme configurado atualmente em `server.js`)
+- Base Path: `/api/mensagens-padrao` (conforme configurado atualmente em `server.js`)
 - Autenticação: Header `Authorization: Bearer <token>`
 - Content-Type: `application/json`
 
 ### Criar mensagem
-- Método: `POST /apo/mensagens-padrao`
+- Método: `POST /api/mensagens-padrao`
 - Entrega (body):
   - `nome` (string, obrigatório): nome descritivo
   - `mensagem` (texto, obrigatório): conteúdo; suporta quebras de linha e emojis
@@ -342,7 +342,7 @@ As rotas de Mensagens Automáticas permitem cadastrar textos prontos para uso em
 
 Exemplo:
 ```
-POST {{base_url}}/apo/mensagens-padrao
+POST {{base_url}}/api/mensagens-padrao
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -353,7 +353,7 @@ Content-Type: application/json
 ```
 
 ### Listar mensagens (com paginação e busca)
-- Método: `GET /apo/mensagens-padrao?q=&page=&limit=`
+- Método: `GET /api/mensagens-padrao?q=&page=&limit=`
 - Entrega (query):
   - `q` (string, opcional): termo para buscar em `nome` e `mensagem`
   - `page` (número, opcional, padrão 1)
@@ -362,12 +362,12 @@ Content-Type: application/json
   - `{ sucesso: true, total, pagina, limite, dados: [ { idMensagem, nome, mensagem, ... } ] }`
 
 ### Obter mensagem por ID
-- Método: `GET /apo/mensagens-padrao/:idMensagem`
+- Método: `GET /api/mensagens-padrao/:idMensagem`
 - Recebe (200): `{ sucesso: true, dado: { idMensagem, nome, mensagem, ... } }`
 - Erros comuns: 404 (não encontrada), 401/403/402
 
 ### Atualizar mensagem
-- Método: `PUT /apo/mensagens-padrao/:idMensagem`
+- Método: `PUT /api/mensagens-padrao/:idMensagem`
 - Entrega (body):
   - `nome` (string, opcional)
   - `mensagem` (texto, opcional)
@@ -375,7 +375,7 @@ Content-Type: application/json
 - Erros comuns: 404, 401/403/402
 
 ### Deletar mensagem
-- Método: `DELETE /apo/mensagens-padrao/:idMensagem`
+- Método: `DELETE /api/mensagens-padrao/:idMensagem`
 - Recebe (200): `{ sucesso: true, mensagem: 'Mensagem padrão deletada com sucesso.' }`
 - Observação: remoção lógica (soft delete) habilitada via `paranoid: true`
 

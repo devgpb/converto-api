@@ -76,7 +76,7 @@ app.use('/api/enterprises', enterpriseRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/sugestoes', sugestoesRoutes);
 app.use('/api/jobs', jobsRoutes);
-app.use('/apo/mensagens-padrao', mensagensPadraoRoutes)
+app.use('/api/mensagens-padrao', mensagensPadraoRoutes)
 
 
 app.use('/api', authRoutes);

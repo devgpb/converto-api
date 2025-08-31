@@ -16,7 +16,7 @@ const getProfile = async (req, res) => {
       email: req.user.email,
       name: req.user.name,
       role: req.user.role,
-      tenant: req.tenant ? { id: req.tenant.id, name: req.tenant.name } : null,
+      // tenant: req.tenant ? { id: req.tenant.id, name: req.tenant.name } : null,
       enterprise: req.enterprise ? { id: req.enterprise.id, name: req.enterprise.name } : null
     };
 
