@@ -1,0 +1,159 @@
+{
+  "info": {
+    "name": "Converto API - Mensagens Padrão",
+    "_postman_id": "e9c2f5a1-3b52-4b3f-91e1-9c4d1f9f1a10",
+    "description": "Coleção de rotas para CRUD de Mensagens Automáticas (Mensagens Padrão). As rotas exigem Authorization: Bearer {{token}} e usam {{base_url}} do ambiente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Mensagens Automáticas",
+      "item": [
+        {
+          "name": "Listar mensagens",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/apo/mensagens-padrao?q={{q}}&page={{page}}&limit={{limit}}",
+              "host": ["{{base_url}}"],
+              "path": ["apo", "mensagens-padrao"],
+              "query": [
+                {"key": "q", "value": "", "description": "termo de busca"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"}
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"sucesso\": true,\n  \"total\": 1,\n  \"pagina\": 1,\n  \"limite\": 20,\n  \"dados\": [{ \n    \"idMensagem\": 1, \n    \"nome\": \"Boas-vindas\", \n    \"mensagem\": \"Olá! Obrigado por entrar em contato.\\nComo posso ajudar? 😊\"\n  }]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar mensagem",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Boas-vindas\",\n  \"mensagem\": \"Olá! Obrigado por entrar em contato.\\nComo posso ajudar? 😊\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/apo/mensagens-padrao",
+              "host": ["{{base_url}}"],
+              "path": ["apo", "mensagens-padrao"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"sucesso\": true,\n  \"mensagem\": \"Mensagem padrão criada com sucesso.\",\n  \"dado\": { \n    \"idMensagem\": 1, \n    \"nome\": \"Boas-vindas\", \n    \"mensagem\": \"Olá! Obrigado por entrar em contato.\\nComo posso ajudar? 😊\",\n    \"createdAt\": \"2025-08-31T00:00:00.000Z\",\n    \"updatedAt\": \"2025-08-31T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obter mensagem por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/apo/mensagens-padrao/{{idMensagem}}",
+              "host": ["{{base_url}}"],
+              "path": ["apo", "mensagens-padrao", "{{idMensagem}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"sucesso\": true,\n  \"dado\": { \n    \"idMensagem\": 1, \n    \"nome\": \"Boas-vindas\", \n    \"mensagem\": \"Olá! Obrigado por entrar em contato.\\nComo posso ajudar? 😊\"\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"sucesso\": false,\n  \"mensagem\": \"Mensagem padrão não encontrada.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar mensagem",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Boas-vindas (v2)\",\n  \"mensagem\": \"Oi! Posso ajudar?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/apo/mensagens-padrao/{{idMensagem}}",
+              "host": ["{{base_url}}"],
+              "path": ["apo", "mensagens-padrao", "{{idMensagem}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"sucesso\": true,\n  \"mensagem\": \"Mensagem padrão atualizada com sucesso.\",\n  \"dado\": { \n    \"idMensagem\": 1, \n    \"nome\": \"Boas-vindas (v2)\", \n    \"mensagem\": \"Oi! Posso ajudar?\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Deletar mensagem",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/apo/mensagens-padrao/{{idMensagem}}",
+              "host": ["{{base_url}}"],
+              "path": ["apo", "mensagens-padrao", "{{idMensagem}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"sucesso\": true,\n  \"mensagem\": \"Mensagem padrão deletada com sucesso.\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

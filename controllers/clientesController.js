@@ -154,15 +154,65 @@ exports.getClientes = async (req, res) => {
       where.cidade = { [models.Sequelize.Op.iLike]: cidade };
     }
 
-    // Busca geral
+    // Busca geral (acentos-insensível para textos, símbolos-insensível para celular)
     if (search) {
-      where[models.Sequelize.Op.or] = [
-        { nome: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-        { celular: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-        { campanha: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-        { status: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-        { cidade: { [models.Sequelize.Op.iLike]: `%${search}%` } },
-      ];
+      // normaliza texto: remove acentos e deixa minúsculo
+      const normalized = String(search)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+      // extrai apenas dígitos para busca no celular
+      const onlyDigits = String(search).replace(/\D/g, '');
+
+      const orConds = [];
+
+      // nome: unaccent + lower LIKE %normalized%
+      orConds.push(
+        Sequelize.where(
+          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('nome'))),
+          { [Op.like]: `%${normalized}%` }
+        )
+      );
+
+      // campanha: se existir, aplica mesma lógica de texto
+      orConds.push(
+        Sequelize.where(
+          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('campanha'))),
+          { [Op.like]: `%${normalized}%` }
+        )
+      );
+
+      // status: texto normalizado
+      orConds.push(
+        Sequelize.where(
+          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('status'))),
+          { [Op.like]: `%${normalized}%` }
+        )
+      );
+
+      // cidade: texto normalizado
+      orConds.push(
+        Sequelize.where(
+          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('cidade'))),
+          { [Op.like]: `%${normalized}%` }
+        )
+      );
+
+      // celular: remove símbolos no banco e faz LIKE com apenas dígitos
+      if (onlyDigits) {
+        orConds.push(
+          Sequelize.where(
+            Sequelize.fn('regexp_replace', Sequelize.col('celular'), '[^0-9]', '', 'g'),
+            { [Op.like]: `%${onlyDigits}%` }
+          )
+        );
+      } else {
+        // fallback para caso o usuário digite algo não numérico mas queira achar por celular também
+        orConds.push({ celular: { [Op.iLike]: `%${search}%` } });
+      }
+
+      where[Op.or] = orConds;
     }
 
     // Ordenação

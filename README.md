@@ -322,3 +322,63 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 Uma coleção Postman está disponível em `postman/converto-api.postman_collection.json` e um arquivo de ambiente em `postman/converto-api.postman_environment.json`.
 Importe ambos no Postman, defina a variável `base_url` para o endereço da API e utilize a variável `token` após autenticação.
+
+## Mensagens Automáticas (Mensagens Padrão)
+
+As rotas de Mensagens Automáticas permitem cadastrar textos prontos para uso em comunicações. Todas as rotas exigem autenticação via JWT e uma assinatura ativa do tenant.
+
+- Base Path: `/apo/mensagens-padrao` (conforme configurado atualmente em `server.js`)
+- Autenticação: Header `Authorization: Bearer <token>`
+- Content-Type: `application/json`
+
+### Criar mensagem
+- Método: `POST /apo/mensagens-padrao`
+- Entrega (body):
+  - `nome` (string, obrigatório): nome descritivo
+  - `mensagem` (texto, obrigatório): conteúdo; suporta quebras de linha e emojis
+- Recebe (200/201):
+  - `{ sucesso: true, mensagem: 'Mensagem padrão criada com sucesso.', dado: { idMensagem, nome, mensagem, createdAt, updatedAt, ... } }`
+- Erros comuns: 400 (campos obrigatórios), 401/403 (auth), 402 (assinatura), 500
+
+Exemplo:
+```
+POST {{base_url}}/apo/mensagens-padrao
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Boas-vindas",
+  "mensagem": "Olá! Obrigado por entrar em contato.\nComo posso ajudar? 😊"
+}
+```
+
+### Listar mensagens (com paginação e busca)
+- Método: `GET /apo/mensagens-padrao?q=&page=&limit=`
+- Entrega (query):
+  - `q` (string, opcional): termo para buscar em `nome` e `mensagem`
+  - `page` (número, opcional, padrão 1)
+  - `limit` (número, opcional, padrão 20)
+- Recebe (200):
+  - `{ sucesso: true, total, pagina, limite, dados: [ { idMensagem, nome, mensagem, ... } ] }`
+
+### Obter mensagem por ID
+- Método: `GET /apo/mensagens-padrao/:idMensagem`
+- Recebe (200): `{ sucesso: true, dado: { idMensagem, nome, mensagem, ... } }`
+- Erros comuns: 404 (não encontrada), 401/403/402
+
+### Atualizar mensagem
+- Método: `PUT /apo/mensagens-padrao/:idMensagem`
+- Entrega (body):
+  - `nome` (string, opcional)
+  - `mensagem` (texto, opcional)
+- Recebe (200): `{ sucesso: true, mensagem: 'Mensagem padrão atualizada com sucesso.', dado: {...} }`
+- Erros comuns: 404, 401/403/402
+
+### Deletar mensagem
+- Método: `DELETE /apo/mensagens-padrao/:idMensagem`
+- Recebe (200): `{ sucesso: true, mensagem: 'Mensagem padrão deletada com sucesso.' }`
+- Observação: remoção lógica (soft delete) habilitada via `paranoid: true`
+
+Notas de sanitização e segurança:
+- Os campos de texto passam por `trim`, remoção de caracteres de controle, e escape básico de HTML preservando quebras de linha e emojis.
+- Busca usa `LIKE` em `nome` e `mensagem`.
