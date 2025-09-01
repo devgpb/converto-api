@@ -342,7 +342,7 @@ exports.postEvento = async (req, res) => {
 
 
     const eventoBanco = await models.EventosUsuarioCliente.create(payload);
-
+    console.log(eventoBanco)
     const completo = await models.EventosUsuarioCliente.findByPk(eventoBanco.id_evento, {
       include: [
         { model: models.Clientes, as: 'cliente', attributes: ['id_cliente','nome','celular','cidade','status'] },

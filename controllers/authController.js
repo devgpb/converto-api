@@ -10,7 +10,7 @@ const { User, Tenant } = require('../models');
 const generateToken = (user) => {
   return jwt.sign(
     {
-      userId: user.id_usuario,
+      user_id: user.id_usuario,
       tenant_id: user.tenant_id,   // 👈 agora vem no payload
       role: user.role,
       email: user.email

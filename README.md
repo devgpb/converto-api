@@ -93,8 +93,10 @@ npm start
 - `GET /api/clientes` - Listar clientes com filtros
 - `DELETE /api/clientes/:id` - Remover cliente
 - `POST /api/clientes/bulk` - Importar clientes via CSV
-- `POST /api/clientes/eventos` - Registrar evento para cliente
-- `GET /api/clientes/eventos` - Listar eventos do usuário
+- `GET /api/clientes/:id_cliente/eventos?inicio=&fim=&tz=` - Listar eventos do cliente (aninhado ao recurso cliente)
+- `POST /api/clientes/:id_cliente/eventos` - Registrar evento para o cliente (usa `id_usuario` autenticado por padrão)
+- `POST /api/clientes/eventos` - Registrar evento (forma antiga)
+- `GET /api/clientes/eventos` - Listar eventos do usuário (forma antiga)
 - `POST /api/clientes/dashboard` - Consolidar dados do dashboard
 
 #### CRM
@@ -322,6 +324,10 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 Uma coleção Postman está disponível em `postman/converto-api.postman_collection.json` e um arquivo de ambiente em `postman/converto-api.postman_environment.json`.
 Importe ambos no Postman, defina a variável `base_url` para o endereço da API e utilize a variável `token` após autenticação.
+
+Exemplo de uso da rota aninhada de eventos por cliente:
+
+`GET http://localhost:3000/api/clientes/<ID_CLIENTE_UUID>/eventos?tz=America/Fortaleza`
 
 ## Mensagens Automáticas (Mensagens Padrão)
 

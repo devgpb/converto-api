@@ -3,7 +3,8 @@
 module.exports = (sequelize, DataTypes) => {
   const EventosUsuarioCliente = sequelize.define('EventosUsuarioCliente', {
     id_evento: {
-      type: DataTypes.UUID,
+      // Mantém compatível com a migration existente (INTEGER autoincrement)
+      type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },

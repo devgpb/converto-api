@@ -3,8 +3,8 @@ module.exports = (sequelize, DataTypes) => {
     id_cliente: {
       type: DataTypes.UUID,
       primaryKey: true,
-      autoIncrement: true,
-      allowNull: false
+      allowNull: false,
+      defaultValue: DataTypes.UUIDV4
     },
     id_usuario: {
       type: DataTypes.UUID,

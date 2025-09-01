@@ -43,6 +43,44 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Listar Eventos do Cliente (aninhado)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{id_cliente}}/eventos?tz=America/Fortaleza",
+              "host": [ "{{base_url}}" ],
+              "path": [ "api", "clientes", "{{id_cliente}}", "eventos" ],
+              "query": [
+                { "key": "tz", "value": "America/Fortaleza" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar Evento do Cliente (aninhado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"2025-09-01T10:00:00\",\n  \"evento\": \"Visita Marcada\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/clientes/{{id_cliente}}/eventos",
+              "host": [ "{{base_url}}" ],
+              "path": [ "api", "clientes", "{{id_cliente}}", "eventos" ]
+            }
+          },
+          "response": []
         }
       ]
     },
