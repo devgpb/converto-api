@@ -5,6 +5,7 @@ const morgan = require('morgan');
 require('dotenv').config();
 const fileUpload = require('express-fileupload');
 const fs = require('fs');
+const path = require('path');
 const { sequelize } = require('./models');
 
 // Importar rotas
@@ -20,6 +21,7 @@ const profileRoutes = require('./routes/profile');
 const sugestoesRoutes = require('./routes/sugestoesRouter');
 const jobsRoutes = require('./routes/jobs');
 const mensagensPadraoRoutes = require('./routes/mensagensPadrao');
+const privacyRoutes = require('./routes/privacy');
 
 require('./queues/workers');
 
@@ -37,6 +39,10 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware de segurança
 app.use(helmet());
+
+// View engine para páginas simples (ex.: política de privacidade)
+app.set('views', path.join(__dirname, 'templates'));
+app.set('view engine', 'ejs');
 
 // CORS - permitir requisições de qualquer origem
 app.use(cors({
@@ -77,6 +83,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/sugestoes', sugestoesRoutes);
 app.use('/api/jobs', jobsRoutes);
 app.use('/api/mensagens-padrao', mensagensPadraoRoutes)
+app.use('/api/privacy', privacyRoutes);
 
 
 app.use('/api', authRoutes);

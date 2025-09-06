@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= policy.name %></title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111; margin: 24px; line-height: 1.5; }
+      header { margin-bottom: 24px; }
+      h1 { font-size: 1.6rem; margin: 0 0 8px; }
+      .meta { color: #555; font-size: 0.9rem; }
+      h2 { margin-top: 24px; font-size: 1.2rem; }
+      ul { padding-left: 18px; }
+      a { color: #0b5fff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .muted { color: #666; }
+      .container { max-width: 860px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1><%= policy.name %></h1>
+        <div class="meta">Versão <strong><%= policy.version %></strong> • Atualizada em <strong><%= policy.last_updated %></strong></div>
+        <div class="meta muted">Controlador: <%= policy.controller.name %> • Contato: <a href="mailto:<%= policy.controller.email %>"><%= policy.controller.email %></a></div>
+      </header>
+
+      <p><%= policy.summary %></p>
+
+      <h2>Dados Coletados</h2>
+      <ul>
+        <% policy.data_collected.forEach(function(item){ %>
+          <li><%= item %></li>
+        <% }) %>
+      </ul>
+
+      <h2>Finalidades do Tratamento</h2>
+      <ul>
+        <% policy.purposes.forEach(function(item){ %>
+          <li><%= item %></li>
+        <% }) %>
+      </ul>
+
+      <h2>Bases Legais</h2>
+      <ul>
+        <% policy.legal_bases.forEach(function(item){ %>
+          <li><%= item %></li>
+        <% }) %>
+      </ul>
+
+      <h2>Compartilhamento e Operadores</h2>
+      <ul>
+        <% policy.sharing.forEach(function(item){ %>
+          <li><%= item %></li>
+        <% }) %>
+      </ul>
+
+      <h2>Transferências Internacionais</h2>
+      <p><%= policy.international_transfers %></p>
+
+      <h2>Cookies e Tecnologias Similares</h2>
+      <p><%= policy.cookies %></p>
+
+      <h2>Retenção e Eliminação</h2>
+      <p><%= policy.retention %></p>
+
+      <h2>Segurança</h2>
+      <p><%= policy.security %></p>
+
+      <h2>Direitos dos Titulares</h2>
+      <ul>
+        <% policy.data_subject_rights.forEach(function(item){ %>
+          <li><%= item %></li>
+        <% }) %>
+      </ul>
+
+      <h2>Crianças e Adolescentes</h2>
+      <p><%= policy.children %></p>
+
+      <h2>Alterações nesta Política</h2>
+      <p><%= policy.changes %></p>
+
+      <h2>Contato</h2>
+      <p><%= policy.contact %></p>
+    </div>
+  </body>
+  </html>
+

@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { User, Tenant } = require('../models');
+const { sendPasswordResetEmail } = require('../services/emailService');
 
 /**
  * Gera um token JWT para o usuário fornecido.
@@ -144,6 +146,77 @@ const me = (req, res) => {
 module.exports = {
   register,
   login,
-  me
+  me,
+  /**
+   * Envia e-mail com link de redefinição de senha.
+   * Aceita: { email }
+   */
+  forgotPassword: async (req, res) => {
+    try {
+      const { email } = req.body || {};
+      if (!email) {
+        return res.status(400).json({ error: 'Email é obrigatório' });
+      }
+
+      const user = await User.findOne({ where: { email } });
+      // Resposta genérica para evitar enumeração de e-mails
+      const genericResponse = { message: 'Se o email existir, enviaremos as instruções' };
+
+      if (!user || !user.is_active) {
+        return res.json(genericResponse);
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
+
+      user.reset_token = token;
+      user.reset_token_expires = expires;
+      await user.save();
+
+      const appUrl = process.env.APP_URL || 'http://localhost:8100';
+      const link = `${appUrl}/redefinir-senha?token=${token}`;
+
+      try {
+        await sendPasswordResetEmail(user, link);
+      } catch (err) {
+        console.error('Erro ao enviar email de reset:', err);
+        // Ainda retornamos sucesso genérico
+      }
+
+      return res.json(genericResponse);
+    } catch (error) {
+      console.error('Erro no forgotPassword:', error);
+      return res.status(500).json({ error: 'Erro interno ao solicitar redefinição' });
+    }
+  },
+
+  /**
+   * Redefine a senha com base em um token válido.
+   * Aceita: { token, password }
+   */
+  resetPassword: async (req, res) => {
+    try {
+      const { token, password } = req.body || {};
+      if (!token || !password) {
+        return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
+      }
+
+      const user = await User.findOne({ where: { reset_token: token } });
+      if (!user || !user.reset_token_expires || new Date(user.reset_token_expires) < new Date()) {
+        return res.status(400).json({ error: 'Token inválido ou expirado' });
+      }
+
+      const password_hash = await bcrypt.hash(password, 10);
+      user.password_hash = password_hash;
+      user.reset_token = null;
+      user.reset_token_expires = null;
+      await user.save();
+
+      return res.json({ message: 'Senha redefinida com sucesso' });
+    } catch (error) {
+      console.error('Erro no resetPassword:', error);
+      return res.status(500).json({ error: 'Erro interno ao redefinir senha' });
+    }
+  }
 };
 
