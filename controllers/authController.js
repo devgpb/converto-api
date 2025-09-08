@@ -173,7 +173,7 @@ module.exports = {
       user.reset_token_expires = expires;
       await user.save();
 
-      const appUrl = process.env.APP_URL || 'http://localhost:8100';
+      const appUrl = process.env.APP_URL || 'http://localhost:5321';
       const link = `${appUrl}/redefinir-senha?token=${token}`;
 
       try {
