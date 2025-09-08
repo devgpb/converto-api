@@ -79,6 +79,19 @@ const changePassword = async (req, res) => {
       return res.status(401).json({ error: 'Senha atual incorreta' });
     }
 
+    // Validação de força de senha no servidor
+    const pwd = String(newPassword || '');
+    const hasMinLength = pwd.length >= 8;
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasLower = /[a-z]/.test(pwd);
+    const hasNumber = /\d/.test(pwd);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+    if (!(hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial)) {
+      return res.status(400).json({
+        error: 'Senha fraca. Use no mínimo 8 caracteres com maiúscula, minúscula, número e símbolo.'
+      });
+    }
+
     const password_hash = await bcrypt.hash(newPassword, 10);
     await user.update({ password_hash });
 
@@ -138,6 +151,19 @@ const resetPassword = async (req, res) => {
 
     if (!user) {
       return res.status(400).json({ error: 'Token inválido ou expirado' });
+    }
+
+    // Validação de força de senha no servidor
+    const pwd = String(newPassword || '');
+    const hasMinLength = pwd.length >= 8;
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasLower = /[a-z]/.test(pwd);
+    const hasNumber = /\d/.test(pwd);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+    if (!(hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial)) {
+      return res.status(400).json({
+        error: 'Senha fraca. Use no mínimo 8 caracteres com maiúscula, minúscula, número e símbolo.'
+      });
     }
 
     const password_hash = await bcrypt.hash(newPassword, 10);

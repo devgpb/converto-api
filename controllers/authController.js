@@ -201,6 +201,20 @@ module.exports = {
         return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
       }
 
+      // Validação de força de senha no servidor
+      const pwd = String(password || '');
+      const hasMinLength = pwd.length >= 8;
+      const hasUpper = /[A-Z]/.test(pwd);
+      const hasLower = /[a-z]/.test(pwd);
+      const hasNumber = /\d/.test(pwd);
+      const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+      if (!(hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial)) {
+        return res.status(400).json({
+          error:
+            'Senha fraca. Use no mínimo 8 caracteres com maiúscula, minúscula, número e símbolo.'
+        });
+      }
+
       const user = await User.findOne({ where: { reset_token: token } });
       if (!user || !user.reset_token_expires || new Date(user.reset_token_expires) < new Date()) {
         return res.status(400).json({ error: 'Token inválido ou expirado' });
