@@ -40,6 +40,8 @@ const PORT = process.env.PORT || 3000;
 // Middleware de segurança
 app.use(helmet());
 
+app.use(morgan('dev'));
+
 // View engine para páginas simples (ex.: política de privacidade)
 app.set('views', path.join(__dirname, 'templates'));
 app.set('view engine', 'ejs');
@@ -51,7 +53,7 @@ app.use(cors({
 }));
 
 // Logging
-app.use(morgan('combined'));
+
 
 // Middleware para webhook (deve vir antes do express.json())
 app.use('/api/stripe', webhookRoutes);

@@ -107,6 +107,9 @@ npm start
 - `POST /api/sugestoes` - Enviar comentário, sugestão ou bug
 - `GET /api/sugestoes` - Listar sugestões enviadas (somente moderadores)
 
+#### Privacidade
+- `GET /api/privacy` - Retorna a Política de Privacidade. Responde em JSON por padrão; envie o header `Accept: text/html` para renderização em HTML.
+
 #### Usuários
 - `POST /api/usuarios` - Criar usuário
 - `GET /api/usuarios` - Listar usuários

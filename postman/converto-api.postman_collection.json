@@ -1129,6 +1129,144 @@
           }
         }
       ]
+    },
+    {
+      "name": "Privacy",
+      "item": [
+        {
+          "name": "Get Privacy (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/privacy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "privacy"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Privacy (HTML)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "text/html" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/privacy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "privacy"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mensagens Padrão",
+      "item": [
+        {
+          "name": "Listar mensagens",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mensagens-padrao?q={{q}}&page={{page}}&limit={{limit}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mensagens-padrao"],
+              "query": [
+                {"key": "q", "value": "", "description": "termo de busca"},
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"}
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Criar mensagem",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Boas-vindas\",\n  \"mensagem\": \"Olá! Obrigado por entrar em contato.\\nComo posso ajudar? 😊\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mensagens-padrao",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mensagens-padrao"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obter mensagem por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mensagens-padrao/{{idMensagem}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mensagens-padrao", "{{idMensagem}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar mensagem",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Boas-vindas (v2)\",\n  \"mensagem\": \"Oi! Posso ajudar?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/mensagens-padrao/{{idMensagem}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mensagens-padrao", "{{idMensagem}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deletar mensagem",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/mensagens-padrao/{{idMensagem}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "mensagens-padrao", "{{idMensagem}}"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
