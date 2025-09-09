@@ -320,9 +320,7 @@ A API está configurada para escutar em `0.0.0.0` e suporta CORS, sendo adequada
 
 Para dúvidas ou problemas, consulte a documentação do Stripe ou abra uma issue no repositório.
 
-## Comandos
 
-stripe listen --forward-to localhost:3000/api/stripe/webhook
 ## Postman
 
 Uma coleção Postman está disponível em `postman/converto-api.postman_collection.json` e um arquivo de ambiente em `postman/converto-api.postman_environment.json`.
@@ -391,3 +389,8 @@ Content-Type: application/json
 Notas de sanitização e segurança:
 - Os campos de texto passam por `trim`, remoção de caracteres de controle, e escape básico de HTML preservando quebras de linha e emojis.
 - Busca usa `LIKE` em `nome` e `mensagem`.
+
+
+
+## Comandos
+stripe listen --forward-to localhost:3000/api/stripe/webhook

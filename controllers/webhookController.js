@@ -5,6 +5,12 @@ const stripe = require('../utils/stripe');
  * Processa eventos recebidos do Stripe e delega para handlers específicos.
  * Também registra o evento para auditoria e marca como processado.
  */
+// Helper: safely convert Stripe unix seconds to JS Date or null
+const toDateOrNull = (unixSeconds) => {
+  const n = Number(unixSeconds);
+  return Number.isFinite(n) && n > 0 ? new Date(n * 1000) : null;
+};
+
 const handleStripeWebhook = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -111,7 +117,7 @@ const handleCheckoutSessionCompleted = async (session) => {
         stripe_price_id: stripeSubscription.items.data[0].price.id,
         quantity: stripeSubscription.items.data[0].quantity,
         status: stripeSubscription.status,
-        current_period_end: new Date(stripeSubscription.current_period_end * 1000)
+        current_period_end: toDateOrNull(stripeSubscription.current_period_end)
       });
     }
 
@@ -144,7 +150,7 @@ const handleSubscriptionCreatedOrUpdated = async (subscription) => {
       stripe_price_id: subscription.items.data[0].price.id,
       quantity: subscription.items.data[0].quantity,
       status: subscription.status,
-      current_period_end: new Date(subscription.current_period_end * 1000)
+      current_period_end: toDateOrNull(subscription.current_period_end)
     };
 
     if (existingSubscription) {
