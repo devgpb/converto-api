@@ -29,7 +29,7 @@ const generateToken = (user) => {
  */
 const register = async (req, res) => {
   try {
-    const { tenant_id, email, password, name } = req.body;
+    const { tenant_id, email, password, name, cpf } = req.body;
 
     if (!tenant_id || !email || !password || !name) {
       return res.status(400).json({ error: 'tenant_id, email, senha e nome são obrigatórios' });
@@ -53,7 +53,9 @@ const register = async (req, res) => {
       name,
       role: 'admin',
       principal: true,
-      password_hash
+      account_type: 'company',
+      password_hash,
+      cpf: cpf || null
     });
 
     const token = generateToken(user);
@@ -66,6 +68,7 @@ const register = async (req, res) => {
         name: user.name,
         role: user.role,
         principal: user.principal,
+        account_type: user.account_type,
         tenant_id: user.tenant_id
       }
     });
@@ -116,6 +119,7 @@ const login = async (req, res) => {
         name: user.name,
         role: user.role,
         principal: user.principal,
+        account_type: user.account_type,
         tenant_id: user.tenant_id
       }
     });
@@ -139,6 +143,7 @@ const me = (req, res) => {
     name: req.user.name,
     role: req.user.role,
     principal: req.user.principal,
+    account_type: req.user.account_type,
     tenant_id: req.user.tenant_id
   });
 };
@@ -233,4 +238,3 @@ module.exports = {
     }
   }
 };
-

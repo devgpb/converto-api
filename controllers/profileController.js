@@ -16,6 +16,9 @@ const getProfile = async (req, res) => {
       email: req.user.email,
       name: req.user.name,
       role: req.user.role,
+      principal: !!req.user.principal,
+      account_type: req.user.account_type || null,
+      cpf: req.user.cpf || null,
       // tenant: req.tenant ? { id: req.tenant.id, name: req.tenant.name } : null,
       enterprise: req.enterprise ? { id: req.enterprise.id, name: req.enterprise.name } : null
     };
@@ -55,6 +58,39 @@ const getProfile = async (req, res) => {
   } catch (error) {
     console.error('Erro ao obter perfil:', error);
     res.status(500).json({ error: 'Erro interno do servidor ao obter perfil' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Autenticação requerida' });
+    }
+
+    const { cpf } = req.body;
+
+    const user = await User.findByPk(req.user.id_usuario);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Atualiza apenas campos permitidos (cpf opcional)
+    const dataToUpdate = {};
+    if (typeof cpf !== 'undefined') dataToUpdate.cpf = cpf || null;
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return res.status(400).json({ error: 'Nenhum campo válido para atualizar' });
+    }
+
+    await user.update(dataToUpdate);
+
+    res.json({
+      id: user.id_usuario,
+      cpf: user.cpf || null,
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
+    res.status(500).json({ error: 'Erro interno do servidor ao atualizar perfil' });
   }
 };
 
@@ -178,6 +214,7 @@ const resetPassword = async (req, res) => {
 
 module.exports = {
   getProfile,
+  updateProfile,
   changePassword,
   forgotPassword,
   resetPassword

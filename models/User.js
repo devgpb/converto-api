@@ -35,6 +35,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: null,
     },
+    account_type: {
+      type: DataTypes.ENUM('company', 'personal'),
+      allowNull: true,
+      defaultValue: null,
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
@@ -49,6 +54,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     reset_token_expires: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    cpf: {
+      type: DataTypes.STRING(20),
       allowNull: true,
     },
   }, {

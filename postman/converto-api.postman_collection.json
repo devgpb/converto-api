@@ -124,7 +124,8 @@
                 "exec": [
                   "const response = pm.response.json();\r",
                   "pm.environment.set(\"bearar_token\", response.token);\r",
-                  ""
+                  "pm.environment.set(\"token\", response.token);\r",
+                  "if (response && response.user && response.user.tenant_id) { pm.environment.set(\"tenant_id\", response.user.tenant_id); }\r"
                 ],
                 "type": "text/javascript",
                 "packages": {}
@@ -159,6 +160,18 @@
         },
         {
           "name": "Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "if (response && response.id) { pm.environment.set(\"user_id\", response.id); }\r"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -238,6 +251,38 @@
                 "api",
                 "profile",
                 "password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"cpf\\\": \\\"000.000.000-00\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
               ]
             }
           },
@@ -330,7 +375,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Empresa Exemplo\",\n  \"email\": \"colaborador@email.com\",\n  \"enterprise_name\": \"Empresa Exemplo\"\n}"
+              "raw": "{\n  \"name\": \"Empresa Exemplo\",\n  \"email\": \"colaborador@email.com\",\n  \"enterprise_name\": \"Empresa Exemplo\",\n  \"enterprise_cnpj\": \"00.000.000/0000-00\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/tenants",
@@ -385,7 +430,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Empresa Atualizada\"\n}"
+              "raw": "{\n  \"name\": \"Empresa Atualizada\",\n  \"cnpj\": \"00.000.000/0000-00\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/tenants/{{tenant_id}}",
@@ -422,7 +467,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Nova Empresa\",\n  \"tenant_id\": \"{{tenant_id}}\"\n}"
+              "raw": "{\n  \"name\": \"Nova Empresa\",\n  \"tenant_id\": \"{{tenant_id}}\",\n  \"cnpj\": \"00.000.000/0000-00\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/enterprises",
@@ -931,7 +976,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Novo Usuário\",\n  \"email\": \"novo@example.com\",\n  \"password\": \"123456\"\n}"
+              "raw": "{\n  \"name\": \"Novo Usuário\",\n  \"email\": \"novo@example.com\",\n  \"password\": \"123456\",\n  \"cpf\": \"000.000.000-00\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/usuarios",
@@ -942,6 +987,26 @@
                 "api",
                 "usuarios"
               ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar account_type (principal)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_type\": \"personal\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "usuarios", "{{user_id}}"]
             }
           },
           "response": []

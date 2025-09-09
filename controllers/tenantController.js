@@ -6,7 +6,7 @@ const stripe = require('../utils/stripe');
  */
 const createTenant = async (req, res) => {
   try {
-    const { name, email, enterprise_name } = req.body;
+    const { name, email, enterprise_name, enterprise_cnpj } = req.body;
 
     // Criar customer no Stripe
     const stripeCustomer = await stripe.customers.create({
@@ -28,6 +28,7 @@ const createTenant = async (req, res) => {
     await Enterprise.create({
       tenant_id: tenant.id,
       name: enterprise_name || name,
+      cnpj: enterprise_cnpj || null,
     });
 
     res.status(201).json({
@@ -141,4 +142,3 @@ module.exports = {
   getTenant,
   updateTenant
 };
-

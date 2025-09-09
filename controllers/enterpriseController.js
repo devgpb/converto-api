@@ -2,7 +2,7 @@ const { Enterprise } = require('../models');
 
 const createEnterprise = async (req, res) => {
   try {
-    const { name, tenant_id } = req.body;
+    const { name, tenant_id, cnpj } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Nome é obrigatório' });
     }
@@ -14,7 +14,7 @@ const createEnterprise = async (req, res) => {
       return res.status(400).json({ error: 'Tenant já possui enterprise' });
     }
 
-    const enterprise = await Enterprise.create({ tenant_id: targetTenantId, name });
+    const enterprise = await Enterprise.create({ tenant_id: targetTenantId, name, cnpj });
     res.status(201).json(enterprise);
   } catch (error) {
     console.error('Erro ao criar enterprise:', error);
@@ -63,7 +63,7 @@ const getEnterprise = async (req, res) => {
 const updateEnterprise = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, cnpj } = req.body;
     const enterprise = await Enterprise.findByPk(id);
 
     if (!enterprise) {
@@ -74,7 +74,15 @@ const updateEnterprise = async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    await enterprise.update({ name: name || enterprise.name });
+    // Se tentar alterar CNPJ e usuário não é principal, negar
+    if (typeof cnpj !== 'undefined' && !req.user.principal) {
+      return res.status(403).json({ error: 'Apenas o usuário principal pode alterar o CNPJ' });
+    }
+
+    await enterprise.update({
+      name: name ?? enterprise.name,
+      cnpj: typeof cnpj !== 'undefined' ? cnpj : enterprise.cnpj,
+    });
     res.json(enterprise);
   } catch (error) {
     console.error('Erro ao atualizar enterprise:', error);
@@ -110,4 +118,3 @@ module.exports = {
   updateEnterprise,
   deleteEnterprise,
 };
-

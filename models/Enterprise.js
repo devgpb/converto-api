@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    cnpj: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
   }, {
     tableName: 'enterprises',
     timestamps: true,
