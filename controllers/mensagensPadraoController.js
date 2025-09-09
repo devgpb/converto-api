@@ -36,6 +36,13 @@ module.exports = {
       const { q, page = 1, limit = 20 } = req.query;
       const where = {};
 
+      // Garante escopo por empresa
+      const enterprise = req.enterprise;
+      if (!enterprise || !enterprise.id) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Empresa não encontrada para o usuário atual.' });
+      }
+      where.enterprise_id = enterprise.id;
+
       if (q) {
         const termo = String(q).trim();
         if (termo) {
@@ -72,6 +79,10 @@ module.exports = {
   async criar(req, res) {
     try {
       const payload = req.body || {};
+      const enterprise = req.enterprise;
+      if (!enterprise || !enterprise.id) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Empresa não encontrada para o usuário atual.' });
+      }
 
       // tratamento e proteção dos campos (trim + sanitização, preservando emojis e quebras de linha)
       const nome = sanitizeText(payload.nome);
@@ -82,6 +93,7 @@ module.exports = {
       }
 
       const criado = await models.mensagensPadrao.create({
+        enterprise_id: enterprise.id,
         nome,
         mensagem
       });
@@ -97,8 +109,14 @@ module.exports = {
   async obter(req, res) {
     try {
       const { idMensagem } = req.params;
+      const enterprise = req.enterprise;
+      if (!enterprise || !enterprise.id) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Empresa não encontrada para o usuário atual.' });
+      }
 
-      const registro = await models.mensagensPadrao.findByPk(idMensagem);
+      const registro = await models.mensagensPadrao.findOne({
+        where: { idMensagem, enterprise_id: enterprise.id }
+      });
       if (!registro) {
         return res.status(404).json({ sucesso: false, mensagem: 'Mensagem padrão não encontrada.' });
       }
@@ -115,8 +133,14 @@ module.exports = {
     try {
       const { idMensagem } = req.params;
       const payload = req.body || {};
+      const enterprise = req.enterprise;
+      if (!enterprise || !enterprise.id) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Empresa não encontrada para o usuário atual.' });
+      }
 
-      const registro = await models.mensagensPadrao.findByPk(idMensagem);
+      const registro = await models.mensagensPadrao.findOne({
+        where: { idMensagem, enterprise_id: enterprise.id }
+      });
       if (!registro) {
         return res.status(404).json({ sucesso: false, mensagem: 'Mensagem padrão não encontrada.' });
       }
@@ -138,8 +162,14 @@ module.exports = {
   async deletar(req, res) {
     try {
       const { idMensagem } = req.params;
+      const enterprise = req.enterprise;
+      if (!enterprise || !enterprise.id) {
+        return res.status(400).json({ sucesso: false, mensagem: 'Empresa não encontrada para o usuário atual.' });
+      }
 
-      const registro = await models.mensagensPadrao.findByPk(idMensagem);
+      const registro = await models.mensagensPadrao.findOne({
+        where: { idMensagem, enterprise_id: enterprise.id }
+      });
       if (!registro) {
         return res.status(404).json({ sucesso: false, mensagem: 'Mensagem padrão não encontrada.' });
       }

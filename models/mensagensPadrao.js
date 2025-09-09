@@ -9,6 +9,10 @@ module.exports = function (Sequelize, DataTypes) {
       primaryKey: true,
       autoIncrement: true
     },
+    enterprise_id: {
+      type: DataTypes.UUID,
+      allowNull: false
+    },
     nome: {
       type: DataTypes.STRING(255),
       allowNull: false
@@ -40,7 +44,10 @@ module.exports = function (Sequelize, DataTypes) {
   });
 
   mensagensPadrao.associate = models => {
-    // Sem associações no momento
+    mensagensPadrao.belongsTo(models.Enterprise, {
+      foreignKey: 'enterprise_id',
+      as: 'enterprise'
+    });
   };
 
   return mensagensPadrao;
