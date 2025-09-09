@@ -88,7 +88,9 @@ app.use('/api/mensagens-padrao', mensagensPadraoRoutes)
 app.use('/api/privacy', privacyRoutes);
 
 
+// Auth routes supported under both /api and /api/auth for compatibility
 app.use('/api', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Rota de health check
 app.get('/health', (req, res) => {

@@ -30,6 +30,9 @@ const generateToken = (user) => {
 const register = async (req, res) => {
   try {
     const { tenant_id, email, password, name, cpf } = req.body;
+    // account_type can be 'company' | 'personal' | 'enterprise' (alias)
+    let { account_type, enterprise_name, enterprise_cnpj, cnpj } = req.body || {};
+    if (account_type === 'enterprise') account_type = 'company';
 
     if (!tenant_id || !email || !password || !name) {
       return res.status(400).json({ error: 'tenant_id, email, senha e nome são obrigatórios' });
@@ -45,7 +48,17 @@ const register = async (req, res) => {
       return res.status(403).json({ error: 'Tenant já possui um usuário principal' });
     }
 
+    // Check duplicate email globally for friendly message
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
+      return res.status(409).json({ error: 'Email já cadastrado' });
+    }
+
     const password_hash = await bcrypt.hash(password, 10);
+
+    const normalizedAccountType = account_type && ['company', 'personal'].includes(account_type)
+      ? account_type
+      : null;
 
     const user = await User.create({
       tenant_id,
@@ -53,10 +66,25 @@ const register = async (req, res) => {
       name,
       role: 'admin',
       principal: true,
-      account_type: 'company',
+      account_type: normalizedAccountType,
       password_hash,
       cpf: cpf || null
     });
+
+    // If company type and info present, update Enterprise details quietly
+    try {
+      if (normalizedAccountType === 'company') {
+        const models = require('../models');
+        const ent = await models.Enterprise.findOne({ where: { tenant_id } });
+        if (ent) {
+          const newName = enterprise_name || name;
+          const newCnpj = (enterprise_cnpj || cnpj || null) || ent.cnpj;
+          await ent.update({ name: newName || ent.name, cnpj: newCnpj });
+        }
+      }
+    } catch (e) {
+      console.warn('Falha ao atualizar enterprise durante registro:', e?.message || e);
+    }
 
     const token = generateToken(user);
 

@@ -1,9 +1,9 @@
-const models = require("../models");
+﻿const models = require("../models");
 const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 
 
-// Busca usuários filtrando pelo cargo informado
+// Busca usuÃ¡rios filtrando pelo cargo informado
 async function getUserByRole(req, res, role){
   try {
     const users = await models.User.findAll({
@@ -12,22 +12,22 @@ async function getUserByRole(req, res, role){
     return res.status(200).json(users);
   } catch (error) {
       console.log(error)
-    return res.status(500).json({ error: 'Erro ao buscar usuários' });
+    return res.status(500).json({ error: 'Erro ao buscar usuÃ¡rios' });
   }
 }
 
-// CREATE - Cria um novo usuário membro dentro do tenant do administrador
+// CREATE - Cria um novo usuÃ¡rio membro dentro do tenant do administrador
 exports.createUser = async (req, res) => {
   try {
     const { email, password, name, cpf } = req.body;
 
     if (!email || !password || !name) {
-      return res.status(400).json({ error: 'email, password e name são obrigatórios' });
+      return res.status(400).json({ error: 'email, password e name sÃ£o obrigatÃ³rios' });
     }
 
     const existingUser = await models.User.findOne({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: 'Email já existe' });
+      return res.status(400).json({ error: 'Email jÃ¡ existe' });
     }
 
     const password_hash = await bcrypt.hash(password, saltRounds);
@@ -51,32 +51,32 @@ exports.createUser = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ error: 'Erro ao criar usuário' });
+    return res.status(500).json({ error: 'Erro ao criar usuÃ¡rio' });
   }
 };
 
   
-  // READ - Lista todos os usuários
+  // READ - Lista todos os usuÃ¡rios
   exports.getAllUsers = async (req, res) => {
     try {
       const users = await models.User.findAll(
         {
-          order: [['created_at', 'ASC']] // Substitua 'nomeDoCampo' pelo campo pelo qual você deseja ordenar
+          order: [['created_at', 'ASC']] // Substitua 'nomeDoCampo' pelo campo pelo qual vocÃª deseja ordenar
         }
       );
       return res.status(200).json(users);
     } catch (error) {
         console.log(error)
-      return res.status(500).json({ error: 'Erro ao buscar usuários' });
+      return res.status(500).json({ error: 'Erro ao buscar usuÃ¡rios' });
     }
   };
 
-  // Lista usuários com cargo de colaborador
+  // Lista usuÃ¡rios com cargo de colaborador
   exports.getColaboradores = async (req, res) => {
     getUserByRole(req, res, "COLABORADOR")
   };
   
-  // READ - Busca um usuário por ID
+  // READ - Busca um usuÃ¡rio por ID
   exports.getUserById = async (req, res) => {
     const { id } = req.params;
     try {
@@ -90,53 +90,59 @@ exports.createUser = async (req, res) => {
         raw:true
       });
       if (!user) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
+        return res.status(404).json({ error: 'UsuÃ¡rio nÃ£o encontrado' });
       }
       return res.status(200).json(user);
     } catch (error) {
       console.log(error)
-      return res.status(500).json({ error: 'Erro ao buscar usuário' });
+      return res.status(500).json({ error: 'Erro ao buscar usuÃ¡rio' });
     }
   };
   
-  // UPDATE - Atualiza um usuário por ID
-  // Permite atualizar dados básicos (name, email, cpf) e senha (senhaAtual/novaSenha).
-  // Regras adicionais apenas quando houver mudança de account_type:
-  // - Só pode mudar account_type se o usuário alvo for principal e o tenant tiver exatamente 1 usuário ativo.
-  // - Ao mudar para 'company' (alias: 'enterprise'), é obrigatório enviar enterprise_name e enterprise_cnpj para atualizar a empresa do tenant.
+  // UPDATE - Atualiza um usuÃ¡rio por ID
+  // Permite atualizar dados bÃ¡sicos (name, email, cpf) e senha (senhaAtual/novaSenha).
+  // Regras adicionais apenas quando houver mudanÃ§a de account_type:
+  // - SÃ³ pode mudar account_type se o usuÃ¡rio alvo for principal e o tenant tiver exatamente 1 usuÃ¡rio ativo.
+  // - Ao mudar para 'company' (alias: 'enterprise'), Ã© obrigatÃ³rio enviar enterprise_name e enterprise_cnpj para atualizar a empresa do tenant.
   exports.updateUser = async (req, res) => {
     try {
       const { id } = req.params;
       const targetUser = await models.User.findOne({ where: { id_usuario: id } });
 
       if (!targetUser) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
+        return res.status(404).json({ error: 'UsuÃ¡rio nÃ£o encontrado' });
       }
 
       const isModerator = req.user?.role === 'moderator';
       const sameTenant = req.user?.tenant_id === targetUser.tenant_id;
       const isSelf = req.user?.id_usuario === targetUser.id_usuario;
 
-      // Autorização básica: moderator pode atualizar qualquer usuário; demais, apenas a si próprio
+      // AutorizaÃ§Ã£o bÃ¡sica: moderator pode atualizar qualquer usuÃ¡rio; demais, apenas a si prÃ³prio
       if (!isModerator && !isSelf) {
-        return res.status(403).json({ error: 'Permissão insuficiente para atualizar este usuário' });
+        return res.status(403).json({ error: 'PermissÃ£o insuficiente para atualizar este usuÃ¡rio' });
       }
       if (!isModerator && !sameTenant) {
-        return res.status(403).json({ error: 'Acesso negado a usuário de outro tenant' });
+        return res.status(403).json({ error: 'Acesso negado a usuÃ¡rio de outro tenant' });
       }
 
-      const updates = {};
+      const updates = {};      // Se for alterar email, verificar unicidade global
+      if (typeof req.body.email !== 'undefined' && req.body.email !== targetUser.email) {
+        const exists = await models.User.findOne({ where: { email: req.body.email } });
+        if (exists && exists.id_usuario !== targetUser.id_usuario) {
+          return res.status(409).json({ error: 'Email já cadastrado' });
+        }
+      }
 
-      // Campos básicos permitidos
+      // Campos bÃ¡sicos permitidos
       if (typeof req.body.name !== 'undefined') updates.name = req.body.name;
       if (typeof req.body.email !== 'undefined') updates.email = req.body.email;
       if (typeof req.body.cpf !== 'undefined') updates.cpf = req.body.cpf || null;
 
-      // Mudança de senha (usa password_hash)
+      // MudanÃ§a de senha (usa password_hash)
       if (req.body.senhaAtual && req.body.novaSenha) {
         const isMatch = await bcrypt.compare(String(req.body.senhaAtual || ''), targetUser.password_hash || '');
         if (!isMatch) {
-          return res.status(401).json({ error: 'Senha atual fornecida está incorreta' });
+          return res.status(401).json({ error: 'Senha atual fornecida estÃ¡ incorreta' });
         }
         const hashedPassword = await bcrypt.hash(String(req.body.novaSenha || ''), saltRounds);
         updates.password_hash = hashedPassword;
@@ -148,18 +154,18 @@ exports.createUser = async (req, res) => {
         // Aceita alias 'enterprise' como 'company'
         if (requestedAccountType === 'enterprise') requestedAccountType = 'company';
         if (!['company', 'personal', null].includes(requestedAccountType)) {
-          return res.status(400).json({ error: 'account_type inválido' });
+          return res.status(400).json({ error: 'account_type invÃ¡lido' });
         }
 
-        // Apenas aplicável para usuário principal
+        // Apenas aplicÃ¡vel para usuÃ¡rio principal
         if (!targetUser.principal) {
-          return res.status(400).json({ error: 'account_type só se aplica ao usuário principal' });
+          return res.status(400).json({ error: 'account_type sÃ³ se aplica ao usuÃ¡rio principal' });
         }
 
-        // Só pode mudar se o tenant tiver exatamente 1 usuário ativo
+        // SÃ³ pode mudar se o tenant tiver exatamente 1 usuÃ¡rio ativo
         const tenantUserCount = await models.User.count({ where: { tenant_id: targetUser.tenant_id, is_active: true } });
         if (tenantUserCount > 1) {
-          return res.status(409).json({ error: 'Não é permitido alterar account_type com mais usuários cadastrados no tenant' });
+          return res.status(409).json({ error: 'NÃ£o Ã© permitido alterar account_type com mais usuÃ¡rios cadastrados no tenant' });
         }
 
         updates.account_type = requestedAccountType;
@@ -169,10 +175,10 @@ exports.createUser = async (req, res) => {
           const enterprise_name = req.body.enterprise_name;
           const enterprise_cnpj = req.body.enterprise_cnpj;
           if (!enterprise_name || !enterprise_cnpj) {
-            return res.status(400).json({ error: 'enterprise_name e enterprise_cnpj são obrigatórios ao definir account_type=company' });
+            return res.status(400).json({ error: 'enterprise_name e enterprise_cnpj sÃ£o obrigatÃ³rios ao definir account_type=company' });
           }
 
-          // Atualiza a empresa do tenant na mesma transação
+          // Atualiza a empresa do tenant na mesma transaÃ§Ã£o
           const sequelize = models.sequelize;
           try {
             await sequelize.transaction(async (t) => {
@@ -192,14 +198,14 @@ exports.createUser = async (req, res) => {
           } catch (txErr) {
             console.log(txErr);
             if (txErr?.name === 'SequelizeUniqueConstraintError') {
-              return res.status(409).json({ error: 'Email já cadastrado' });
+              return res.status(409).json({ error: 'Email jÃ¡ cadastrado' });
             }
-            return res.status(500).json({ error: 'Erro ao atualizar usuário/empresa' });
+            return res.status(500).json({ error: 'Erro ao atualizar usuÃ¡rio/empresa' });
           }
         }
       }
 
-      // Atualização normal (sem necessidade de atualizar Enterprise em conjunto)
+      // AtualizaÃ§Ã£o normal (sem necessidade de atualizar Enterprise em conjunto)
       try {
         await targetUser.update(updates);
         return res.status(200).json({
@@ -212,33 +218,33 @@ exports.createUser = async (req, res) => {
       } catch (err) {
         console.log(err);
         if (err?.name === 'SequelizeUniqueConstraintError') {
-          return res.status(409).json({ error: 'Email já cadastrado' });
+          return res.status(409).json({ error: 'Email jÃ¡ cadastrado' });
         }
-        return res.status(500).json({ error: 'Erro ao atualizar usuário' });
+        return res.status(500).json({ error: 'Erro ao atualizar usuÃ¡rio' });
       }
     } catch (error) {
       console.log(error);
-      return res.status(500).json({ error: 'Erro ao atualizar usuário' });
+      return res.status(500).json({ error: 'Erro ao atualizar usuÃ¡rio' });
     }
   };
 
-// PATCH - Atualiza a role de um usuário (apenas pelo principal)
+// PATCH - Atualiza a role de um usuÃ¡rio (apenas pelo principal)
 exports.updateUserRole = async (req, res) => {
   try {
     if (!req.user.principal) {
-      return res.status(403).json({ error: 'Apenas o usuário principal pode alterar roles' });
+      return res.status(403).json({ error: 'Apenas o usuÃ¡rio principal pode alterar roles' });
     }
 
     const { id } = req.params;
     const { role } = req.body;
 
     if (!['admin', 'member'].includes(role)) {
-      return res.status(400).json({ error: 'Role inválida' });
+      return res.status(400).json({ error: 'Role invÃ¡lida' });
     }
 
     const user = await models.User.findOne({ where: { id_usuario: id, tenant_id: req.user.tenant_id } });
     if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
+      return res.status(404).json({ error: 'UsuÃ¡rio nÃ£o encontrado' });
     }
 
     await user.update({ role });
@@ -249,20 +255,21 @@ exports.updateUserRole = async (req, res) => {
   }
 };
 
-  // DELETE - Remove um usuário por ID
+  // DELETE - Remove um usuÃ¡rio por ID
   exports.deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
       const deleted = await models.User.destroy({
-        where: { id:id },
+        where: { id_usuario: id },
       });
       if (deleted > 0) {
         res.status(200).json({ message: "Setor deletado com sucesso" });
       } else {
-        res.status(404).json({ message: "Setor não encontrada" });
+        res.status(404).json({ message: "Setor nÃ£o encontrada" });
       }
     } catch (error) {
-      return res.status(500).json({ error: 'Erro ao excluir usuário' });
+      return res.status(500).json({ error: 'Erro ao excluir usuÃ¡rio' });
     }
   };
   
+
