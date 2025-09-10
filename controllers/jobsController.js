@@ -28,7 +28,35 @@ exports.importClients = async (req, res) => {
 
 exports.exportClients = async (req, res) => {
   try {
-    const payload = { ...(req.body || {}), userId: req.user.id_usuario };
+    const { exportScope, targetUserId } = req.body || {};
+
+    // Escopo padrão: exportar do próprio usuário
+    const scope = exportScope === 'enterprise' ? 'enterprise' : 'user';
+
+    // Apenas admin pode exportar todos os clientes da empresa
+    if (scope === 'enterprise' && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Apenas admin pode exportar todos os clientes da empresa' });
+    }
+
+    // Se for escopo de usuário e foi passado outro userId, apenas admin pode
+    let effectiveUserId = req.user.id_usuario;
+    if (scope === 'user') {
+      if (targetUserId && String(targetUserId) !== String(req.user.id_usuario)) {
+        if (req.user.role !== 'admin') {
+          return res.status(403).json({ error: 'Apenas admin pode exportar clientes de outro usuário' });
+        }
+        effectiveUserId = String(targetUserId);
+      }
+    }
+
+    const payload = {
+      userId: req.user.id_usuario,           // quem requisitou
+      requesterRole: req.user.role,
+      exportScope: scope,                    // 'enterprise' | 'user'
+      enterpriseId: req.enterprise?.id || null,
+      targetUserId: scope === 'user' ? effectiveUserId : null,
+    };
+
     const job = await exportQueue.add('export', payload);
     res.json({ id: job.id });
   } catch (err) {
