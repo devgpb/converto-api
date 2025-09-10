@@ -1,5 +1,6 @@
 const importQueue = require('../queues/importClientsQueue');
 const exportQueue = require('../queues/exportClientsQueue');
+const { cleanupExports, getEnvPrefix } = require('../services/cleanupExports');
 
 const queues = {
   import: importQueue,
@@ -93,29 +94,42 @@ exports.cancelJob = async (req, res) => {
   res.json({ success: true });
 };
 
-// Lista jobs do usuário autenticado (todas as filas)
+// Lista jobs do usuário autenticado (todas as filas) com paginação e busca
 exports.listUserJobs = async (req, res) => {
   try {
-    const targetUserId = (req.user.role === 'moderator' && req.query.userId) ? String(req.query.userId) : req.user.id_usuario;
+    const targetUserId = (req.user.role === 'moderator' && req.query.userId)
+      ? String(req.query.userId)
+      : req.user.id_usuario;
+
     const states = (req.query.states ? String(req.query.states).split(',') : ['waiting', 'active', 'delayed', 'completed', 'failed'])
-      .map(s => s.trim()).filter(Boolean);
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const perPage = Math.min(Math.max(parseInt(req.query.perPage, 10) || 10, 1), 100);
+    const search = (req.query.search ? String(req.query.search).toLowerCase() : '').trim();
+
+    // Para coletar resultados suficientes antes de paginar, buscamos até um limite razoável por estado
+    const preLimit = Math.min(parseInt(req.query.limit, 10) || 500, 1000);
 
     const results = [];
 
-    for (const [alias, q] of Object.entries(queues)) {
+    for (const [, q] of Object.entries(queues)) {
       const collected = [];
       for (const st of states) {
         try {
-          const jobs = await q.getJobs([st], 0, limit - 1);
+          // Busca um lote por estado; Bull aceita range (start, end)
+          const jobs = await q.getJobs([st], 0, preLimit - 1);
           collected.push(...jobs);
-        } catch (_) { /* ignora estados não suportados */ }
+        } catch (_) {
+          // ignora estados não suportados
+        }
       }
 
       for (const job of collected) {
         if (job?.data?.userId !== targetUserId) continue;
         const state = await job.getState();
-        results.push({
+        const base = {
           queue: q.name,
           id: job.id,
           name: job.name,
@@ -128,16 +142,72 @@ exports.listUserJobs = async (req, res) => {
           failedReason: job.failedReason || null,
           returnvalue: job.returnvalue || null,
           timestamp: job.timestamp || null,
+          requestedAt: job.timestamp ? new Date(job.timestamp).toISOString() : null,
           attemptsMade: job.attemptsMade || 0,
-        });
+        };
+
+        // Se for export e estiver concluído, expõe link e expiração de forma amigável
+        if (job.name === 'export' && state === 'completed' && job.returnvalue) {
+          const rv = job.returnvalue || {};
+          base.exportLink = rv.signedUrl || null;
+          base.exportExpiresAt = rv.expiresAt || null;
+          base.storagePath = rv.path || null;
+        }
+
+        results.push(base);
       }
     }
 
     // Ordena do mais recente para o mais antigo
     results.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    res.json({ count: results.length, jobs: results.slice(0, limit) });
+
+    // Filtro de busca (id, fila, estado, nome do job e alguns campos de data)
+    const filtered = search
+      ? results.filter((r) => {
+          const haystack = [
+            String(r.id || ''),
+            String(r.queue || ''),
+            String(r.state || ''),
+            String(r.name || ''),
+            r.requestedAt ? new Date(r.requestedAt).toLocaleString('pt-BR') : '',
+          ]
+            .join(' ')
+            .toLowerCase();
+          return haystack.includes(search);
+        })
+      : results;
+
+    const total = filtered.length;
+    const totalPages = Math.max(Math.ceil(total / perPage), 1);
+    const start = (page - 1) * perPage;
+    const end = start + perPage;
+    const pageItems = filtered.slice(start, end);
+
+    res.json({
+      data: pageItems,
+      meta: { total, page, perPage, totalPages },
+    });
   } catch (err) {
     console.error('listUserJobs error', err);
     res.status(500).json({ error: 'Erro ao listar jobs do usuário' });
+  }
+};
+
+// Dispara a limpeza de exports (on-demand) – apenas moderator
+exports.cleanupExportsNow = async (req, res) => {
+  try {
+    if (req?.user?.role !== 'moderator') {
+      return res.status(403).json({ error: 'Apenas moderator pode disparar limpeza' });
+    }
+
+    const env = req.body?.env ? String(req.body.env) : undefined; // 'dev' | 'prod' opcional
+    const dryRun = req.body?.dryRun === true;
+    const ttlDays = req.body?.ttlDays ? parseInt(req.body.ttlDays, 10) : undefined;
+
+    const summary = await cleanupExports({ env, ttlDays, dryRun });
+    res.json({ ok: true, env: getEnvPrefix(env), summary });
+  } catch (err) {
+    console.error('cleanupExportsNow error', err);
+    res.status(500).json({ error: 'Erro ao executar limpeza', details: err.message });
   }
 };

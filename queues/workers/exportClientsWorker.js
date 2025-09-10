@@ -1,8 +1,8 @@
-const { Worker, Queue } = require('bullmq');
+const { Worker } = require('bullmq');
 const path = require('path');
 const connection = require('../../services/redis');
 const models = require('../../models');
-const { uploadBuffer, removeFile, createSignedUrl, SUPABASE_BUCKET } = require('../../services/supabase');
+const { uploadBuffer, createSignedUrl, SUPABASE_BUCKET } = require('../../services/supabase');
 
 // Configuração de retenção no topo do arquivo (em dias)
 const EXPORT_FILE_TTL_DAYS = 2;
@@ -76,7 +76,8 @@ async function processExport(job) {
   const csv = rowsToCsv(plain);
   const buffer = Buffer.from(csv, 'utf8');
 
-  const baseDir = `exports/${enterpriseId || 'no-enterprise'}`;
+  const envPrefix = process.env.STORAGE_ENV || (process.env.NODE_ENV === 'production' ? 'prod' : 'dev');
+  const baseDir = `exports/${envPrefix}/${enterpriseId || 'no-enterprise'}`;
   const filename = `clientes_${exportScope}_${Date.now()}.csv`;
   const objectPath = path.posix.join(baseDir, filename);
 
@@ -84,15 +85,6 @@ async function processExport(job) {
 
   const expiresSeconds = EXPORT_FILE_TTL_DAYS * 24 * 60 * 60;
   const signedUrl = await createSignedUrl(objectPath, expiresSeconds);
-
-  // Agenda limpeza do arquivo após TTL usando a própria fila
-  const queue = new Queue('export-clients', { connection });
-  await queue.add('cleanup', { path: objectPath, bucket: SUPABASE_BUCKET, requestedBy: userId }, {
-    delay: expiresSeconds * 1000,
-    attempts: 3,
-    removeOnComplete: true,
-    removeOnFail: true,
-  });
 
   return {
     bucket: SUPABASE_BUCKET,
@@ -105,19 +97,42 @@ async function processExport(job) {
   };
 }
 
-async function processCleanup(job) {
-  const { path: objectPath } = job.data || {};
-  if (!objectPath) throw new Error('Caminho do objeto ausente para cleanup');
-  await removeFile(objectPath);
-  return { removed: true, path: objectPath };
-}
-
-module.exports = new Worker('export-clients', async job => {
-  if (job.name === 'cleanup') {
-    return await processCleanup(job);
-  }
+const worker = new Worker('export-clients', async job => {
   if (job.name === 'export') {
     return await processExport(job);
   }
   throw new Error(`Nome de job não suportado: ${job.name}`);
 }, { connection });
+
+worker.on('failed', (job, err) => {
+  try {
+    console.error('[worker:export-clients] Job FAILED', {
+      id: job?.id,
+      name: job?.name,
+      queue: job?.queueName,
+      data: job?.data, // log completo para diagnóstico interno
+      message: err?.message,
+      stack: err?.stack,
+    });
+  } catch (e) {
+    console.error('[worker:export-clients] Job FAILED (log error)', err);
+  }
+});
+
+worker.on('completed', (job, result) => {
+  try {
+    console.log('[worker:export-clients] Job COMPLETED', {
+      id: job?.id,
+      name: job?.name,
+      queue: job?.queueName,
+      result: {
+        path: result?.path,
+        expiresAt: result?.expiresAt,
+        count: result?.count,
+        scope: result?.scope,
+      }
+    });
+  } catch (_) {}
+});
+
+module.exports = worker;

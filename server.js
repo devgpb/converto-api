@@ -33,6 +33,34 @@ const exportQueue = require('./queues/exportClientsQueue');
 
 
 const authRoutes = require('./routes/auth');
+const { cleanupExports, getEnvPrefix } = require('./services/cleanupExports');
+
+// Limpeza diária configurável por constante (hora local)
+const CLEANUP_DAILY_HOUR = 0;   // 0 = meia-noite
+const CLEANUP_DAILY_MINUTE = 0; // minuto
+
+function scheduleDailyCleanup() {
+  const envPrefix = getEnvPrefix();
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(CLEANUP_DAILY_HOUR, CLEANUP_DAILY_MINUTE, 0, 0);
+  if (next <= now) {
+    next.setDate(next.getDate() + 1);
+  }
+  const delay = next.getTime() - now.getTime();
+  console.log(`🧹 Limpeza diária agendada para ${next.toString()} [env=${envPrefix}]`);
+  setTimeout(async () => {
+    try {
+      const summary = await cleanupExports({ env: envPrefix });
+      console.log(`🧹 Limpeza executada [${envPrefix}] -> removidos: ${summary.removedCount}/${summary.expiredCount}`);
+    } catch (e) {
+      console.warn('Falha ao executar limpeza diária:', e.message);
+    } finally {
+      // Reagendar para o próximo dia
+      scheduleDailyCleanup();
+    }
+  }, Math.max(1, delay));
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -157,6 +185,9 @@ const startServer = async () => {
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
       console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 URL: http://localhost:${PORT}`);
+
+      // Agendamento diário (meia-noite local por padrão)
+      scheduleDailyCleanup();
     });
 
   } catch (error) {
