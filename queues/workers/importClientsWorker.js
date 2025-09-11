@@ -3,8 +3,8 @@ const connection = require('../../services/redis');
 const { importClientsFromCsv } = require('../../services/importClients');
 
 const worker = new Worker('import-clients', async job => {
-  const { filePath, enterpriseId, userId } = job.data;
-  return await importClientsFromCsv(filePath, enterpriseId, userId);
+  const { filePath, enterpriseId, assignUserId } = job.data;
+  return await importClientsFromCsv(filePath, enterpriseId, assignUserId || null);
 }, { connection });
 
 worker.on('failed', (job, err) => {

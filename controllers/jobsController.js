@@ -15,10 +15,23 @@ exports.importClients = async (req, res) => {
     }
     const csvFile = req.files.file;
     const filePath = csvFile.tempFilePath;
+    // Atribuição opcional do proprietário (fora do CSV)
+    const rawAssign = (req.body?.assignUserId || req.body?.targetUserId || '').toString().trim();
+    let assignUserId = null;
+    if (rawAssign) {
+      if (req.user.role === 'admin') {
+        assignUserId = rawAssign;
+      } else if (rawAssign === String(req.user.id_usuario)) {
+        assignUserId = rawAssign;
+      } else {
+        return res.status(403).json({ error: 'Apenas administradores podem atribuir clientes para outros usuários' });
+      }
+    }
     const job = await importQueue.add('import', {
       filePath,
       enterpriseId: req.enterprise.id,
       userId: req.user.id_usuario,
+      assignUserId,
     });
     res.json({ id: job.id });
   } catch (err) {

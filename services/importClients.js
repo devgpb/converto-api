@@ -3,7 +3,7 @@ const fs = require('fs');
 const models = require('../models');
 const { formataTexto } = require('../utils/utils');
 
-async function importClientsFromCsv(filePath, enterpriseId, userId) {
+async function importClientsFromCsv(filePath, enterpriseId, assignUserId) {
   const linhas = await new Promise((resolve, reject) => {
     const resultados = [];
     const toSnake = (s) => s
@@ -37,7 +37,7 @@ async function importClientsFromCsv(filePath, enterpriseId, userId) {
       const dados = { celular, nome: formataTexto(nomeRaw), enterprise_id: enterpriseId };
       if (row.status) dados.status = formataTexto(row.status.trim());
       if (row.cidade) dados.cidade = formataTexto(row.cidade.trim());
-      dados.id_usuario = userId;
+      if (assignUserId) dados.id_usuario = assignUserId;
       if (row.indicacao) dados.indicacao = formataTexto(row.indicacao.trim());
       if (row.campanha) dados.campanha = formataTexto(row.campanha.trim());
       if (row.observacao) dados.observacao = formataTexto(row.observacao.trim());
