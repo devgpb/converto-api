@@ -1,4 +1,5 @@
-const { Tenant, Subscription } = require('../models');
+const { Tenant, Subscription, CancellationReason } = require('../models');
+const { Op } = require('sequelize');
 const stripe = require('../utils/stripe');
 const { v4: uuidv4 } = require('uuid');
 
@@ -123,7 +124,7 @@ const getSubscriptionStatus = async (req, res) => {
       include: [{
         model: Subscription,
         as: 'subscriptions',
-        where: { status: ['active', 'trialing'] },
+        where: { status: { [Op.in]: ['active', 'trialing'] } },
         required: false
       }]
     });
@@ -149,6 +150,118 @@ const getSubscriptionStatus = async (req, res) => {
 module.exports = {
   createCheckoutSession,
   createPortalSession,
-  getSubscriptionStatus
+  getSubscriptionStatus,
+  /**
+   * Cancela a renovação automática (cancel_at_period_end = true)
+   * Apenas Admin/Moderator (validado na rota). Requer tenant_id no body.
+   */
+  cancelSubscription: async (req, res) => {
+    try {
+      const { tenant_id, motivo, descricao } = req.body;
+
+      // Segurança básica: garantir que o usuário pertence ao tenant
+      if (!req.tenant || req.tenant.id !== tenant_id) {
+        return res.status(403).json({ error: 'Tenant inválido para este usuário' });
+      }
+
+      const tenant = await Tenant.findByPk(tenant_id);
+      if (!tenant) {
+        return res.status(404).json({ error: 'Tenant não encontrado' });
+      }
+      if (!tenant.stripe_customer_id) {
+        return res.status(400).json({ error: 'Tenant não possui customer_id do Stripe' });
+      }
+
+      // Buscar assinatura ativa/trial deste tenant
+      const active = await Subscription.findOne({
+        where: { tenant_id, status: { [Op.in]: ['active', 'trialing'] } },
+        order: [['created_at', 'DESC']]
+      });
+
+      if (!active) {
+        return res.status(404).json({ error: 'Nenhuma assinatura ativa encontrada' });
+      }
+
+      // Cancelar ao fim do período
+      const updated = await stripe.subscriptions.update(active.stripe_subscription_id, {
+        cancel_at_period_end: true,
+      });
+
+      // Registrar motivo opcional do cancelamento
+      try {
+        if (motivo || descricao) {
+          await CancellationReason.create({
+            tenant_id,
+            stripe_subscription_id: active.stripe_subscription_id,
+            motivo: typeof motivo === 'string' ? motivo : null,
+            descricao: typeof descricao === 'string' ? descricao : null,
+          });
+        }
+      } catch (logErr) {
+        // Não falha o fluxo de cancelamento se o log não persistir
+        console.error('Falha ao registrar motivo de cancelamento:', logErr);
+      }
+
+      // Responder com dados essenciais; sincronização completa via webhook
+      return res.json({
+        message: 'Renovação cancelada ao final do período vigente',
+        cancel_at_period_end: updated.cancel_at_period_end === true,
+        current_period_end: updated.current_period_end ? new Date(updated.current_period_end * 1000) : null,
+        subscription_status: updated.status,
+      });
+    } catch (error) {
+      console.error('Erro ao cancelar renovação da assinatura:', error);
+      if (error.type === 'StripeError') {
+        return res.status(400).json({ error: 'Erro no Stripe', details: error.message });
+      }
+      return res.status(500).json({ error: 'Erro interno ao cancelar renovação' });
+    }
+  },
+  /**
+   * Reverte o cancelamento (cancel_at_period_end = false)
+   */
+  resumeSubscription: async (req, res) => {
+    try {
+      const { tenant_id } = req.body;
+
+      if (!req.tenant || req.tenant.id !== tenant_id) {
+        return res.status(403).json({ error: 'Tenant inválido para este usuário' });
+      }
+
+      const tenant = await Tenant.findByPk(tenant_id);
+      if (!tenant) {
+        return res.status(404).json({ error: 'Tenant não encontrado' });
+      }
+      if (!tenant.stripe_customer_id) {
+        return res.status(400).json({ error: 'Tenant não possui customer_id do Stripe' });
+      }
+
+      const active = await Subscription.findOne({
+        where: { tenant_id, status: { [Op.in]: ['active', 'trialing'] } },
+        order: [['created_at', 'DESC']]
+      });
+
+      if (!active) {
+        return res.status(404).json({ error: 'Nenhuma assinatura ativa encontrada' });
+      }
+
+      const updated = await stripe.subscriptions.update(active.stripe_subscription_id, {
+        cancel_at_period_end: false,
+      });
+
+      return res.json({
+        message: 'Renovação reativada',
+        cancel_at_period_end: updated.cancel_at_period_end === true,
+        current_period_end: updated.current_period_end ? new Date(updated.current_period_end * 1000) : null,
+        subscription_status: updated.status,
+      });
+    } catch (error) {
+      console.error('Erro ao reativar renovação da assinatura:', error);
+      if (error.type === 'StripeError') {
+        return res.status(400).json({ error: 'Erro no Stripe', details: error.message });
+      }
+      return res.status(500).json({ error: 'Erro interno ao reativar renovação' });
+    }
+  }
 };
 

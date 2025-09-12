@@ -31,6 +31,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('active', 'trialing', 'canceled', 'unpaid', 'past_due', 'incomplete'),
       allowNull: false,
     },
+    cancel_at_period_end: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     current_period_end: {
       type: DataTypes.DATE,
       allowNull: true,

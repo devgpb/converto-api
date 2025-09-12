@@ -117,6 +117,7 @@ const handleCheckoutSessionCompleted = async (session) => {
         stripe_price_id: stripeSubscription.items.data[0].price.id,
         quantity: stripeSubscription.items.data[0].quantity,
         status: stripeSubscription.status,
+        cancel_at_period_end: !!stripeSubscription.cancel_at_period_end,
         current_period_end: toDateOrNull(stripeSubscription.current_period_end)
       });
     }
@@ -150,6 +151,7 @@ const handleSubscriptionCreatedOrUpdated = async (subscription) => {
       stripe_price_id: subscription.items.data[0].price.id,
       quantity: subscription.items.data[0].quantity,
       status: subscription.status,
+      cancel_at_period_end: !!subscription.cancel_at_period_end,
       current_period_end: toDateOrNull(subscription.current_period_end)
     };
 

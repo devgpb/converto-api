@@ -19,7 +19,7 @@ const getProfile = async (req, res) => {
       principal: !!req.user.principal,
       account_type: req.user.account_type || null,
       cpf: req.user.cpf || null,
-      // tenant: req.tenant ? { id: req.tenant.id, name: req.tenant.name } : null,
+      tenant: req.tenant ? { id: req.tenant.id, name: req.tenant.name } : null,
       enterprise: req.enterprise ? { id: req.enterprise.id, name: req.enterprise.name } : null
     };
 
@@ -29,7 +29,7 @@ const getProfile = async (req, res) => {
           {
             model: Subscription,
             as: 'subscriptions',
-            where: { status: ['active', 'trialing'] },
+            where: { status: { [Op.in]: ['active', 'trialing'] } },
             required: false
           },
           { model: User, as: 'users' }

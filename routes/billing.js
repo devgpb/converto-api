@@ -3,13 +3,16 @@ const router = express.Router();
 const { 
   createCheckoutSession, 
   createPortalSession, 
-  getSubscriptionStatus 
+  getSubscriptionStatus,
+  cancelSubscription,
+  resumeSubscription,
 } = require('../controllers/billingController');
 const { 
   validateCheckoutCreation, 
   validatePortalRequest 
 } = require('../middleware/validation');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { listCancellationReasons } = require('../controllers/cancellationController');
 
 // POST /api/billing/checkout - Criar checkout session
 router.post('/checkout', validateCheckoutCreation, createCheckoutSession);
@@ -19,6 +22,15 @@ router.post('/portal', authenticateToken, requireRole(['admin', 'moderator']), v
 
 // GET /api/billing/status/:tenant_id - Buscar status da assinatura
 router.get('/status/:tenant_id', authenticateToken, getSubscriptionStatus);
+
+// POST /api/billing/cancel - Cancelar renovação automática ao fim do período
+router.post('/cancel', authenticateToken, requireRole(['admin', 'moderator']), validatePortalRequest, cancelSubscription);
+
+// POST /api/billing/resume - Reativar renovação automática
+router.post('/resume', authenticateToken, requireRole(['admin', 'moderator']), validatePortalRequest, resumeSubscription);
+
+// GET /api/billing/cancellations - Listar motivos de cancelamento do tenant
+router.get('/cancellations', authenticateToken, requireRole(['admin', 'moderator']), listCancellationReasons);
 
 module.exports = router;
 
