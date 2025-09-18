@@ -222,13 +222,13 @@ exports.getClientes = async (req, res) => {
     if (sortBy === 'id') order = [['id_cliente', 'ASC']];
 
     // Paginação
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    let page = Math.max(1, parseInt(req.query.page, 10) || 1);
     let perPage = parseInt(req.query.perPage, 10) || 50; // default 50, antes era limit fixo 50
     if (Number.isNaN(perPage) || perPage < 1) perPage = 50;
     perPage = Math.min(perPage, 200);
-    const offset = (page - 1) * perPage;
+    let offset = (page - 1) * perPage;
 
-    const { count, rows } = await models.Clientes.findAndCountAll({
+    let result = await models.Clientes.findAndCountAll({
       where,
       order,
       include: [{
@@ -242,13 +242,44 @@ exports.getClientes = async (req, res) => {
       distinct: true,
     });
 
+    let total = result.count;
+    const limiteTotalRaw = parseInt(req.query.limiteTotal, 10);
+    const hasLimiteTotal = !Number.isNaN(limiteTotalRaw) && limiteTotalRaw > 0;
+    const effectiveTotal = hasLimiteTotal ? Math.min(total, limiteTotalRaw) : total;
+    let totalPages = Math.max(1, Math.ceil(effectiveTotal / perPage));
+
+    if (page > totalPages) {
+      page = totalPages;
+      offset = (page - 1) * perPage;
+      result = await models.Clientes.findAndCountAll({
+        where,
+        order,
+        include: [{
+          model: models.User,
+          as: 'responsavel',
+          attributes: ['name', 'id_usuario'],
+          required: false,
+        }],
+        limit: perPage,
+        offset,
+        distinct: true,
+      });
+    }
+
+    let rows = result.rows;
+    if (hasLimiteTotal && page === totalPages) {
+      const already = perPage * (totalPages - 1);
+      const remaining = Math.max(0, effectiveTotal - already);
+      if (remaining < rows.length) rows = rows.slice(0, remaining);
+    }
+
     return res.json({
       data: rows,
       meta: {
-        total: count,
+        total: effectiveTotal,
         page,
         perPage,
-        totalPages: Math.ceil(count / perPage),
+        totalPages,
       }
     });
   } catch (error) {
@@ -546,11 +577,14 @@ function bounds(periodo = 'hoje') {
   // Presets
   switch ((periodo || 'hoje').toLowerCase()) {
     case 'semana': {
-      const start = now.clone().subtract(7, 'days').startOf('day');
+      // Semana atual (ISO): de segunda 00:00 até hoje 23:59:59
+      const start = now.clone().startOf('isoWeek');
       return { start: start.toDate(), end: endToday.toDate() };
     }
-    case 'mes': {
-      const start = now.clone().subtract(30, 'days').startOf('day');
+    case 'mes':
+    case 'mês': {
+      // Mês atual: do dia 1º 00:00 até hoje 23:59:59
+      const start = now.clone().startOf('month');
       return { start: start.toDate(), end: endToday.toDate() };
     }
     case 'hoje':
@@ -579,7 +613,9 @@ exports.getDashboard = async (req, res) => {
       campanhaRaw,
       eventosMarcados,
       clientesFechados,
-      contatosPorDiaRaw
+      contatosPorDiaRaw,
+      ligacoesEfetuadasRaw,
+      ligacoesPorDiaRaw
     ] = await Promise.all([
       // Clientes novos no período
       models.Clientes.count({
@@ -676,6 +712,38 @@ exports.getDashboard = async (req, res) => {
           order: [Sequelize.literal(`${dayExpr} ASC`)],
           raw: true,
         });
+      })(),
+
+      // NOVO: Total de ligações efetuadas no período
+      (() => {
+        const where = { deleted_at: null, data_hora: { [Op.between]: [start, end] } };
+        const include = req.user.role === 'moderator' ? undefined : [
+          { model: models.Clientes, as: 'cliente', where: { enterprise_id: req.enterprise.id }, attributes: [], required: true }
+        ];
+        return models.Ligacoes.count({ where, include });
+      })(),
+
+      // NOVO: Ligações por dia (group by data_hora na timezone)
+      (() => {
+        const qi = models.sequelize.getQueryInterface();
+        const dhField = models.Ligacoes.rawAttributes.data_hora?.field || 'data_hora';
+        const qDh = qi.quoteIdentifier(dhField);
+        const dayExpr = `DATE((${qDh} AT TIME ZONE '${TZ}'))`;
+        const where = { deleted_at: null, data_hora: { [Op.between]: [start, end] } };
+        const include = req.user.role === 'moderator' ? undefined : [
+          { model: models.Clientes, as: 'cliente', where: { enterprise_id: req.enterprise.id }, attributes: [], required: true }
+        ];
+        return models.Ligacoes.findAll({
+          attributes: [
+            [Sequelize.literal(dayExpr), 'dia'],
+            [Sequelize.literal('COUNT(*)'), 'count'],
+          ],
+          where,
+          include,
+          group: [Sequelize.literal(dayExpr)],
+          order: [Sequelize.literal(`${dayExpr} ASC`)],
+          raw: true,
+        });
       })()
 
     ]);
@@ -705,6 +773,26 @@ exports.getDashboard = async (req, res) => {
       contatosPorDia.push({ date: key, count: byDayMap.get(key) ?? 0 });
     }
 
+    // Normaliza ligações por dia preenchendo zeros
+    const ligByDayMap = new Map();
+    for (const row of ligacoesPorDiaRaw) {
+      const key = moment.tz(String(row.dia).slice(0, 10), 'YYYY-MM-DD', TZ).format('YYYY-MM-DD');
+      ligByDayMap.set(key, Number(row.count) || 0);
+    }
+    const ligacoesPorDia = [];
+    for (let m = startDay.clone(); m.diff(endDay, 'day') <= 0; m.add(1, 'day')) {
+      const key = m.format('YYYY-MM-DD');
+      ligacoesPorDia.push({ date: key, count: ligByDayMap.get(key) ?? 0 });
+    }
+
+    const preset = Array.isArray(periodo) ? 'custom' : String(periodo || 'hoje').toLowerCase();
+    const periodoInfo = {
+      inicio: moment.tz(start, TZ).format(),
+      fim: moment.tz(end, TZ).format(),
+      tz: TZ,
+      preset,
+    };
+
     const dashboardData = {
       clientesNovosHoje: clientesNovos,
       clientesAtendidosHoje: clientesAtendidos,
@@ -716,6 +804,9 @@ exports.getDashboard = async (req, res) => {
       eventosMarcados,
       clientesFechados,
       contatosPorDia,
+      ligacoesEfetuadas: Number(ligacoesEfetuadasRaw) || 0,
+      ligacoesPorDia,
+      periodo: periodoInfo,
     };
 
     return res.json({ success: true, data: dashboardData });
@@ -902,6 +993,60 @@ exports.listEventosMarcados = async (req, res) => {
     });
   } catch (err) {
     console.error('listEventosMarcados:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno' });
+  }
+};
+
+// 5) Listar ligações efetuadas no período (data_hora)
+// Campos: data_hora, atendida, observacao, usuario.name, cliente.nome
+exports.listLigacoesEfetuadas = async (req, res) => {
+  try {
+    const { periodo = 'hoje' } = req.body;
+    const { start, end } = bounds(periodo);
+
+    const page = Math.max(1, parseInt(req.body.page, 10) || 1);
+    let perPage = parseInt(req.body.perPage, 10) || 20;
+    if (Number.isNaN(perPage) || perPage < 1) perPage = 20;
+    perPage = Math.min(perPage, 200);
+    const offset = (page - 1) * perPage;
+
+    const include = [
+      { model: models.User, as: 'usuario', attributes: ['name'], required: false },
+      { model: models.Clientes, as: 'cliente', attributes: ['nome'], required: true, where: req.user.role !== 'moderator' ? { enterprise_id: req.enterprise.id } : undefined },
+    ];
+
+    const where = {
+      deleted_at: null,
+      data_hora: { [Op.between]: [start, end] },
+    };
+
+    const { rows, count } = await models.Ligacoes.findAndCountAll({
+      attributes: ['id_ligacao', 'data_hora', 'atendida', 'observacao'],
+      where,
+      include,
+      order: [['data_hora', 'DESC'], ['id_ligacao', 'DESC']],
+      limit: perPage,
+      offset,
+      distinct: true,
+    });
+
+    const data = rows.map((r) => ({
+      idLigacao: r.id_ligacao,
+      data: r.data_hora,
+      dataHora: r.data_hora,
+      atendida: r.atendida,
+      observacao: r.observacao,
+      usuario: r.usuario ? { nomeCompleto: r.usuario.name } : null,
+      cliente: r.cliente ? { nome: r.cliente.nome } : null,
+    }));
+
+    return res.json({
+      success: true,
+      meta: { total: count, page, perPage, totalPages: Math.ceil(count / perPage) },
+      data,
+    });
+  } catch (err) {
+    console.error('listLigacoesEfetuadas:', err);
     return res.status(500).json({ success: false, error: 'Erro interno' });
   }
 };

@@ -1332,6 +1332,31 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Relatórios",
+      "item": [
+        {
+          "name": "Relatório de Vendedor",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_usuario\": \"{{user_id}}\",\n  \"periodo\": \"hoje\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/relatorios/vendedor",
+              "host": ["{{base_url}}"],
+              "path": ["api", "relatorios", "vendedor"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {

@@ -40,6 +40,7 @@ router.post('/dashboard/clientes-novos', authenticateToken, clientesController.l
 router.post('/dashboard/clientes-atendidos', authenticateToken, clientesController.listClientesAtendidos);
 router.post('/dashboard/clientes-fechados', authenticateToken, clientesController.listClientesFechados);
 router.post('/dashboard/eventos-marcados', authenticateToken, clientesController.listEventosMarcados);
+router.post('/dashboard/ligacoes-efetuadas', authenticateToken, clientesController.listLigacoesEfetuadas);
 
 router.get('/', authenticateToken, requireActiveSubscription, clientesController.getClientes);
 router.get('/filtros', authenticateToken, requireActiveSubscription, clientesController.getFiltros);

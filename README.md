@@ -98,6 +98,28 @@ npm start
 - `POST /api/clientes/eventos` - Registrar evento (forma antiga)
 - `GET /api/clientes/eventos` - Listar eventos do usuário (forma antiga)
 - `POST /api/clientes/dashboard` - Consolidar dados do dashboard
+  - Body: `periodo` (string ou array, opcional) — presets: `hoje` | `semana` | `mes`; ou `["YYYY-MM-DD", "YYYY-MM-DD"]`
+  - Observação: `semana` usa a semana ISO atual (segunda 00:00 → hoje 23:59:59) e `mes` usa o mês corrente (dia 1 00:00 → hoje 23:59:59), ambos no fuso `America/Maceio`.
+  - Resposta inclui `data.periodo`: `{ inicio, fim, tz, preset }` para exibição do intervalo aplicado no frontend.
+
+#### Relatórios
+- `POST /api/relatorios/vendedor` - Relatório completo por vendedor (vendas, atendimentos e ligações no período)
+  - Body:
+    - `id_usuario` (UUID, opcional) — padrão: usuário autenticado
+    - `periodo` (string ou array, opcional) — presets: `hoje` | `semana` | `mes`; ou `["YYYY-MM-DD", "YYYY-MM-DD"]`
+  - Resposta (200):
+    - `data.periodo`: `{ inicio, fim, tz }`
+    - `data.vendedor`: `{ id_usuario, nome, role }`
+    - `data.clientes`:
+      - `totalResponsavel`, `novosPeriodo`, `atendidosPeriodo`, `orcamentosEnviadosPeriodo`
+      - `vendasFechadasPeriodo`, `tempoMedioFechamentoDias`, `taxaConversaoPeriodo`
+      - `statusDistribution` (array `{ status, count }`)
+      - `campanhaDistribution` (array `{ campanha, count }`)
+      - `atendimentosPorDia` (série por dia)
+    - `data.ligacoes`:
+      - `total`, `atendidas`, `naoAtendidas`, `taxaAtendimento`, `porDia` (série)
+      - `topClientes` (top 5 por ligações: `{ id_cliente, nome, count }`)
+    - `data.eventos`: `total`, `confirmados`, `pendentes`
 
 #### CRM
 - `GET /api/crm/contatos` - Pesquisar número no CRM

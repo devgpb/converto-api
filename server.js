@@ -21,7 +21,9 @@ const profileRoutes = require('./routes/profile');
 const sugestoesRoutes = require('./routes/sugestoesRouter');
 const jobsRoutes = require('./routes/jobs');
 const mensagensPadraoRoutes = require('./routes/mensagensPadrao');
+const ligacoesRoutes = require('./routes/ligacoesRouter');
 const privacyRoutes = require('./routes/privacy');
+const relatoriosRoutes = require('./routes/relatoriosRouter');
 
 require('./queues/workers');
 
@@ -113,7 +115,9 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/sugestoes', sugestoesRoutes);
 app.use('/api/jobs', jobsRoutes);
 app.use('/api/mensagens-padrao', mensagensPadraoRoutes)
+app.use('/api/ligacoes', ligacoesRoutes)
 app.use('/api/privacy', privacyRoutes);
+app.use('/api/relatorios', relatoriosRoutes);
 
 
 // Auth routes supported under both /api and /api/auth for compatibility
