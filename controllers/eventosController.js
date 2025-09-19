@@ -91,7 +91,7 @@ exports.criarEvento = async (req, res) => {
  */
 exports.listarEventosDoCliente = async (req, res) => {
   try {
-    const { id_cliente, inicio, fim, tz = "America/Maceio" } = req.query;
+    const { id_cliente, inicio, fim, tz = "America/Maceio", limit } = req.query;
 
     if (!id_cliente) {
       return res.status(400).json({ error: "id_cliente é obrigatório." });
@@ -121,9 +121,8 @@ exports.listarEventosDoCliente = async (req, res) => {
     const eventos = await models.EventosUsuarioCliente.findAll({
       where,
       order: [["data", "ASC"]],
+      limit: limit ? parseInt(limit, 10) : undefined,
     });
-
-    console.log(eventos);
 
     const resposta = eventos.map((e) => {
       const json = e.toJSON();

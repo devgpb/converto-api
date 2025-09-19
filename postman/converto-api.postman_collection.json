@@ -1357,6 +1357,102 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Ligações",
+      "item": [
+        {
+          "name": "Registrar/Atualizar Ligação",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "description": "Cria ou atualiza uma ligação. Se enviar 'id_ligacao' no corpo, atualiza o registro existente (upsert). 'id_usuario' é opcional e, se ausente, usa o usuário do token. 'data_hora' aceita ISO (ex.: 2025-09-18T14:30:00) ou dd/MM/yyyy HH:mm em conjunto com 'tz'. Se não informar 'data_hora', será usado o horário atual (UTC).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_cliente\": \"{{id_cliente}}\",\n  \"id_usuario\": \"{{user_id}}\",\n  \"data_hora\": \"18/09/2025 14:30\",\n  \"tz\": \"America/Maceio\",\n  \"atendida\": true,\n  \"observacao\": \"Cliente atendeu e solicitou proposta.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ligacoes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ligacoes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Ligações do Cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "description": "Lista ligações de um cliente com paginação. Retorna { data, meta:{ total, page, perPage, totalPages } }. Campos adicionais por item: dataHoraISO e dataHoraLocal (baseado em 'tz').",
+            "url": {
+              "raw": "{{base_url}}/api/ligacoes/cliente/{{id_cliente}}?tz=America/Maceio&page=1&perPage=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ligacoes", "cliente", "{{id_cliente}}"],
+              "query": [
+                { "key": "tz", "value": "America/Maceio" },
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Ligações do Usuário",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "description": "Lista ligações feitas por um usuário. Se 'id_usuario' não for informado, assume o usuário do token. Use 'inicio' e 'fim' (YYYY-MM-DD) para filtrar período. 'tz' define a zona de conversão para datas locais retornadas (dataHoraLocal).",
+            "url": {
+              "raw": "{{base_url}}/api/ligacoes?id_usuario={{user_id}}&tz=America/Maceio&inicio=2025-09-01&fim=2025-09-30",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ligacoes"],
+              "query": [
+                { "key": "id_usuario", "value": "{{user_id}}", "description": "Opcional: se ausente, usa o usuário autenticado" },
+                { "key": "tz", "value": "America/Maceio", "description": "Opcional: timezone para conversão de datas" },
+                { "key": "inicio", "value": "2025-09-01", "description": "Opcional: data inicial (YYYY-MM-DD)" },
+                { "key": "fim", "value": "2025-09-30", "description": "Opcional: data final (YYYY-MM-DD)" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Clientes para Ligação (/usuarios)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "description": "Lista clientes elegíveis para ligação dentro do tenant, com filtros e paginação. Por padrão, exclui quem já recebeu ligação no dia ('excluirLigadosHoje' = true). Suporta busca por nome/campanha/status/cidade/celular. Retorna { data, meta:{ page, pageSize, total, totalPages, hasNextPage, hasPrevPage } }.",
+            "url": {
+              "raw": "{{base_url}}/api/ligacoes/usuarios?search=&status=todos&cidade=todas&idUsuario=&dia=2025-09-18&excluirLigadosHoje=true&page=1&pageSize=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ligacoes", "usuarios"],
+              "query": [
+                { "key": "search", "value": "", "description": "Termo para nome/campanha/status/cidade/celular" },
+                { "key": "status", "value": "todos", "description": "Filtro de status (ou 'todos')" },
+                { "key": "cidade", "value": "todas", "description": "Filtro de cidade (ou 'todas')" },
+                { "key": "idUsuario", "value": "", "description": "Opcional: filtra por responsável" },
+                { "key": "dia", "value": "2025-09-18", "description": "Dia no formato YYYY-MM-DD" },
+                { "key": "excluirLigadosHoje", "value": "true", "description": "true/false para excluir já ligados no dia" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "50" },
+                { "key": "quantidade", "value": "", "description": "Atalho: limita resultados sem paginação" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {

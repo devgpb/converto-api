@@ -17,7 +17,6 @@ exports.postClientes = async (req, res) => {
     const { celular, id_cliente, nome, status, cidade, fechado } = req.body;
     const enterpriseId = req.user?.tenant?.enterprise?.id;
 
-    console.log("\n\n", enterpriseId)
 
     // valida nome obrigatório
     if (!nome && !id_cliente) {
