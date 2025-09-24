@@ -270,3 +270,36 @@ exports.listarUsuariosParaLigacao = async (req, res) => {
     return res.status(500).json({ error: 'Erro ao listar clientes para ligação.' });
   }
 };
+
+// DELETE /api/ligacoes/:id_ligacao
+exports.deleteLigacao = async (req, res) => {
+  try {
+    const { id_ligacao } = req.params;
+    if (!id_ligacao) {
+      return res.status(400).json({ error: 'id_ligacao é obrigatório' });
+    }
+
+    // Restringir por tenant/enterprise, exceto moderador
+    const include = [];
+    if (req.user?.role !== 'moderator') {
+      include.push({
+        model: models.User,
+        as: 'usuario',
+        where: { tenant_id: req.user?.tenant_id },
+        attributes: [],
+        required: true,
+      });
+    }
+
+    const reg = await models.Ligacoes.findOne({ where: { id_ligacao }, include });
+    if (!reg) {
+      return res.status(404).json({ error: 'Ligação não encontrada' });
+    }
+
+    await reg.destroy(); // paranoid: soft delete
+    return res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'Erro ao excluir ligação' });
+  }
+};

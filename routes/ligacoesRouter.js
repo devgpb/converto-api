@@ -16,5 +16,7 @@ router.get('/cliente/:id_cliente', authenticateToken, requireActiveSubscription,
 // Listagem de usuários para realizar ligações (seleção)
 router.get('/usuarios', authenticateToken, requireActiveSubscription, ligacoesController.listarUsuariosParaLigacao);
 
-module.exports = router;
+// Excluir ligação
+router.delete('/:id_ligacao', authenticateToken, requireActiveSubscription, ligacoesController.deleteLigacao);
 
+module.exports = router;
