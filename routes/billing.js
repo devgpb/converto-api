@@ -4,6 +4,7 @@ const {
   createCheckoutSession, 
   createPortalSession, 
   getSubscriptionStatus,
+  syncSubscription,
   cancelSubscription,
   resumeSubscription,
 } = require('../controllers/billingController');
@@ -20,6 +21,9 @@ router.post('/checkout', validateCheckoutCreation, createCheckoutSession);
 // POST /api/billing/portal - Criar portal session
 router.post('/portal', authenticateToken, requireRole(['admin', 'moderator']), validatePortalRequest, createPortalSession);
 
+// POST /api/billing/sync - Sincronizar assinatura manualmente com o Stripe
+router.post('/sync', authenticateToken, requireRole(['admin', 'moderator']), validatePortalRequest, syncSubscription);
+
 // GET /api/billing/status/:tenant_id - Buscar status da assinatura
 router.get('/status/:tenant_id', authenticateToken, getSubscriptionStatus);
 
@@ -33,4 +37,3 @@ router.post('/resume', authenticateToken, requireRole(['admin', 'moderator']), v
 router.get('/cancellations', authenticateToken, requireRole(['admin', 'moderator']), listCancellationReasons);
 
 module.exports = router;
-

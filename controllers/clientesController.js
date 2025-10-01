@@ -319,10 +319,6 @@ exports.getFiltros = async (req, res) => {
     const status = statusData.map(s => s.DISTINCT).filter(Boolean);
     const cidades = cidadesData.map(c => c.DISTINCT).filter(Boolean);
 
-    // adiciona "Visita Marcada" se não existir
-    if (!status.includes('Visita Marcada')) {
-      status.push('Visita Marcada');
-    }
 
     // ordena alfabeticamente (pt-BR, case-insensitive)
     status.sort((a, b) =>
