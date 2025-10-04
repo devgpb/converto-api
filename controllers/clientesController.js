@@ -14,7 +14,7 @@ function validaCampo(valor) {
 // Conta quantos pedidos estão com status faltando
 exports.postClientes = async (req, res) => {
   try {
-    const { celular, id_cliente, nome, status, cidade, fechado } = req.body;
+    const { celular, id_cliente, nome, status, cidade, fechado, campanha } = req.body;
     const enterpriseId = req.user?.tenant?.enterprise?.id;
 
 
@@ -47,8 +47,9 @@ exports.postClientes = async (req, res) => {
 
     // formata status se veio no body e não vazio
     if (status) {
-      const statusFormatado = formataTexto(status);
-      const statusLower = statusFormatado.toLowerCase();
+      const isNumeric = !isNaN(Number(status));
+      const statusFormatado = isNumeric ? Number(status) : formataTexto(status);
+      const statusLower = isNumeric ? '' : String(statusFormatado).toLowerCase();
 
       // não permite mudar o status se já está fechado
       if(cliente.fechado != null && statusLower != "fechado"){
@@ -62,7 +63,29 @@ exports.postClientes = async (req, res) => {
       statusLower == "concluído" || statusLower == "fechou")){
         return res.status(400).json({ error: "Para fechar um cliente marque como fechado" });
       }
-      req.body.status = statusFormatado;
+      // Resolve para id (se veio nome), senão mantém o id recebido
+      if (!isNumeric) {
+        const [statusRow] = await models.ClienteStatus.findOrCreate({
+          where: { enterprise_id: enterpriseId, nome: statusFormatado },
+          defaults: { enterprise_id: enterpriseId, nome: statusFormatado },
+        });
+        req.body.status = statusRow?.id;
+      } else {
+        req.body.status = statusFormatado;
+      }
+
+      // garante que exista na tabela mestre e atualiza relação quando possível
+      try {
+        const [statusRow] = await models.ClienteStatus.findOrCreate({
+          where: { enterprise_id: enterpriseId, nome: statusFormatado },
+          defaults: { enterprise_id: enterpriseId, nome: statusFormatado },
+        });
+        if (id_cliente && statusRow) {
+          const map = await models.ClientesStatus.findOne({ where: { id_cliente } });
+          if (map) await map.update({ status_id: statusRow.id });
+          else await models.ClientesStatus.create({ id_cliente, status_id: statusRow.id });
+        }
+      } catch (_) {}
     }
 
     if(cliente.fechado == null && validaCampo(fechado)){
@@ -75,6 +98,22 @@ exports.postClientes = async (req, res) => {
       req.body.status = null;
     }
     
+    // garante campanha mestre e mapeamento, se vier no body
+    if (campanha) {
+      const isNumeric = !isNaN(Number(campanha));
+      const campFormatada = isNumeric ? Number(campanha) : formataTexto(campanha);
+      req.body.campanha = campFormatada;
+      try {
+        if (!isNumeric) {
+          const [campRow] = await models.ClienteCampanha.findOrCreate({
+            where: { enterprise_id: enterpriseId, nome: campFormatada },
+            defaults: { enterprise_id: enterpriseId, nome: campFormatada },
+          });
+          req.body.campanha = campRow?.id;
+        }
+      } catch (_) {}
+    }
+
     // formata cidade se veio no body e não vazio
     if (cidade) {
       req.body.cidade = formataTexto(cidade);
@@ -124,7 +163,7 @@ exports.postClientes = async (req, res) => {
     return _upsert(req, res);
 
   } catch (error) {
-    console.error(error);
+    console.log(error);
     return res.status(500).json({ error: error.message });
   }
 };
@@ -143,9 +182,31 @@ exports.getClientes = async (req, res) => {
 
     if (id_usuario && id_usuario != "null") where.id_usuario = id_usuario;
 
-    // Filtro por status
+    // Includes base (ligação direta por id)
+    const include = [{
+      model: models.User,
+      as: 'responsavel',
+      attributes: ['name', 'id_usuario'],
+      required: false,
+    }, {
+      model: models.ClienteStatus,
+      as: 'statusRef',
+      attributes: ['id', 'nome'],
+      required: false,
+    }, {
+      model: models.ClienteCampanha,
+      as: 'campanhaRef',
+      attributes: ['id', 'nome'],
+      required: false,
+    }];
+
+    // Filtro por status via tabela mestre
     if (status && status !== "todos") {
-      where.status = { [models.Sequelize.Op.iLike]: status }; // case insensitive
+      const statusInc = include.find(i => i.as === 'statusRef');
+      if (statusInc) {
+        statusInc.required = true;
+        statusInc.where = { nome: { [Op.iLike]: status } };
+      }
     }
 
     // Filtro por cidade
@@ -175,17 +236,19 @@ exports.getClientes = async (req, res) => {
       );
 
       // campanha: se existir, aplica mesma lógica de texto
+      // campanha por relação direta
       orConds.push(
         Sequelize.where(
-          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('campanha'))),
+          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('campanhaRef.nome'))),
           { [Op.like]: `%${normalized}%` }
         )
       );
 
       // status: texto normalizado
+      // status por relação direta
       orConds.push(
         Sequelize.where(
-          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('status'))),
+          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('statusRef.nome'))),
           { [Op.like]: `%${normalized}%` }
         )
       );
@@ -230,12 +293,7 @@ exports.getClientes = async (req, res) => {
     let result = await models.Clientes.findAndCountAll({
       where,
       order,
-      include: [{
-        model: models.User,
-        as: 'responsavel',
-        attributes: ['name', 'id_usuario'],
-        required: false,
-      }],
+      include,
       limit: perPage,
       offset,
       distinct: true,
@@ -253,19 +311,19 @@ exports.getClientes = async (req, res) => {
       result = await models.Clientes.findAndCountAll({
         where,
         order,
-        include: [{
-          model: models.User,
-          as: 'responsavel',
-          attributes: ['name', 'id_usuario'],
-          required: false,
-        }],
+        include,
         limit: perPage,
         offset,
         distinct: true,
       });
     }
 
-    let rows = result.rows;
+    let rows = result.rows.map(r => r.toJSON ? r.toJSON() : r);
+    rows = rows.map(r => ({
+      ...r,
+      status: r?.statusRef?.nome ?? null,
+      campanha: r?.campanhaRef?.nome ?? null,
+    }));
     if (hasLimiteTotal && page === totalPages) {
       const already = perPage * (totalPages - 1);
       const remaining = Math.max(0, effectiveTotal - already);
@@ -308,27 +366,26 @@ exports.deleteCliente = async (req, res) => {
     }
 };
 
-// Retorna listas de status e cidades disponíveis para filtros
+// Retorna listas de status, campanhas e cidades disponíveis para filtros
 exports.getFiltros = async (req, res) => {
   try {
     const whereBase = req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id };
-    const statusData = await models.Clientes.aggregate('status', 'DISTINCT', { plain: false, where: whereBase });
-    const cidadesData = await models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: whereBase });
+    const [cidadesData, statusMestre, campanhasMestre] = await Promise.all([
+      models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: whereBase }),
+      models.ClienteStatus.findAll({ where: whereBase, attributes: ['nome'], order: [['ordem','ASC'],['nome','ASC']], raw: true }),
+      models.ClienteCampanha.findAll({ where: whereBase, attributes: ['nome'], raw: true }),
+    ]);
 
-    // monta os arrays
-    const status = statusData.map(s => s.DISTINCT).filter(Boolean);
+    const status = statusMestre.map(s => s.nome).filter(Boolean);
+    const campanhas = campanhasMestre.map(c => c.nome).filter(Boolean);
     const cidades = cidadesData.map(c => c.DISTINCT).filter(Boolean);
 
-
     // ordena alfabeticamente (pt-BR, case-insensitive)
-    status.sort((a, b) =>
-      a.localeCompare(b, 'pt', { sensitivity: 'base' })
-    );
-    cidades.sort((a, b) =>
-      a.localeCompare(b, 'pt', { sensitivity: 'base' })
-    );
+    status.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+    campanhas.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+    cidades.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
 
-    return res.status(200).json({ status, cidades });
+    return res.status(200).json({ status, campanhas, cidades });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: error.message });
@@ -368,15 +425,28 @@ exports.postEvento = async (req, res) => {
 
 
     const eventoBanco = await models.EventosUsuarioCliente.create(payload);
-    console.log(eventoBanco)
     const completo = await models.EventosUsuarioCliente.findByPk(eventoBanco.id_evento, {
       include: [
-        { model: models.Clientes, as: 'cliente', attributes: ['id_cliente','nome','celular','cidade','status'] },
+        { 
+          model: models.Clientes,
+          as: 'cliente',
+          attributes: ['id_cliente','nome','celular','cidade','status'],
+          include: [
+            { model: models.ClienteStatus, as: 'statusRef', attributes: ['nome'] },
+            { model: models.ClienteCampanha, as: 'campanhaRef', attributes: ['nome'] },
+          ]
+        },
         { model: models.User, as: 'usuario', attributes: ['id_usuario','name'] }
       ]
     });
 
-    return res.json(completo);
+    const json = completo.toJSON();
+    if (json?.cliente) {
+      json.cliente.status = json.cliente.statusRef?.nome ?? null;
+      delete json.cliente.statusRef;
+      delete json.cliente.campanhaRef;
+    }
+    return res.json(json);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
@@ -426,6 +496,10 @@ exports.getEventosUsuario = async (req, res) => {
           as: "cliente",
           attributes: ["id_cliente", "nome", "celular", "cidade", "status"],
           where: req.user.role !== 'moderator' ? { enterprise_id: req.enterprise.id } : undefined,
+          include: [
+            { model: models.ClienteStatus, as: 'statusRef', attributes: ['nome'], required: false },
+            { model: models.ClienteCampanha, as: 'campanhaRef', attributes: ['nome'], required: false },
+          ]
         },
       ],
     });
@@ -433,6 +507,11 @@ exports.getEventosUsuario = async (req, res) => {
     // devolve também a data formatada no fuso solicitado
     const resposta = eventos.map((e) => {
       const json = e.toJSON();
+      if (json?.cliente) {
+        json.cliente.status = json.cliente.statusRef?.nome ?? null;
+        delete json.cliente.statusRef;
+        delete json.cliente.campanhaRef;
+      }
       json.dataLocal = moment.utc(json.data).tz(tz).format("DD/MM/YYYY HH:mm");
       return json;
     });
@@ -631,39 +710,55 @@ exports.getDashboard = async (req, res) => {
       // Total cadastrados
       models.Clientes.count({ where: { ...onlyAlive } }),
 
-      // Pendentes (status = 'Aguardando')
-      models.Clientes.count({
-        where: { ...onlyAlive, status: 'Aguardando' },
-      }),
+      // Pendentes (status = 'Aguardando') via relação
+      (() => {
+        const where = { ...onlyAlive };
+        const include = [{
+          model: models.ClienteStatus,
+          as: 'statusRef',
+          required: true,
+          where: { nome: 'Aguardando' },
+          attributes: [],
+        }];
+        return models.Clientes.count({ where, include });
+      })(),
 
       // Orçamentos enviados (boolean)
       models.Clientes.count({
         where: { ...onlyAlive, orcamento_enviado: true },
       }),
 
-      // Distribuição por status (group by status)
-      models.Clientes.findAll({
-        attributes: [
-          'status',
-          [Sequelize.fn('COUNT', Sequelize.col('id_cliente')), 'count'],
-        ],
-        where: { ...onlyAlive, updated_at: { [Op.between]: [start, end] } },
-        group: ['status'],
-        order: [[Sequelize.literal('count'), 'DESC']],
-        raw: true,
-      }),
+      // Distribuição por status (group by status mestre)
+      (() => {
+        const statusNameExpr = "COALESCE(\"statusRef\".\"nome\", 'Sem status')";
+        return models.Clientes.findAll({
+          attributes: [
+            [Sequelize.literal(statusNameExpr), 'status'],
+            [Sequelize.literal('COUNT("Clientes"."id_cliente")'), 'count'],
+          ],
+          where: { ...onlyAlive, updated_at: { [Op.between]: [start, end] } },
+          include: [{ model: models.ClienteStatus, as: 'statusRef', attributes: [], required: false }],
+          group: [Sequelize.literal(statusNameExpr)],
+          order: [[Sequelize.literal('count'), 'DESC']],
+          raw: true,
+        });
+      })(),
 
-      // Distribuição por campanha (group by campanha)
-      models.Clientes.findAll({
-        attributes: [
-          [models.sequelize.literal(`COALESCE(campanha, 'Sem Campanha')`), 'campanha'],
-          [models.sequelize.fn('COUNT', models.sequelize.col('id_cliente')), 'count'],
-        ],
-        where: { ...onlyAlive, updated_at: { [Op.between]: [start, end] } },
-        group: [models.sequelize.literal(`COALESCE(campanha, 'Sem Campanha')`)],
-        order: [[models.sequelize.literal('count'), 'DESC']],
-        raw: true,
-      }),
+      // Distribuição por campanha (group by campanha mestre)
+      (() => {
+        const campNameExpr = "COALESCE(\"campanhaRef\".\"nome\", 'Sem Campanha')";
+        return models.Clientes.findAll({
+          attributes: [
+            [Sequelize.literal(campNameExpr), 'campanha'],
+            [Sequelize.literal('COUNT("Clientes"."id_cliente")'), 'count'],
+          ],
+          where: { ...onlyAlive, updated_at: { [Op.between]: [start, end] } },
+          include: [{ model: models.ClienteCampanha, as: 'campanhaRef', attributes: [], required: false }],
+          group: [Sequelize.literal(campNameExpr)],
+          order: [[Sequelize.literal('count'), 'DESC']],
+          raw: true,
+        });
+      })(),
 
       // Eventos marcados no período
       models.EventosUsuarioCliente.count({
@@ -837,18 +932,24 @@ exports.listClientesNovos = async (req, res) => {
       where.enterprise_id = req.enterprise.id;
     }
     const { count, rows } = await models.Clientes.findAndCountAll({
-      attributes: ['nome', 'updated_at', 'status', 'observacao'],
+      attributes: ['id_cliente','nome', 'updated_at', 'status', 'observacao'],
       where,
+      include: [{ model: models.ClienteStatus, as: 'statusRef', attributes: ['nome'], required: false }],
       order: [['created_at', 'DESC'], ['id_cliente', 'DESC']],
       limit: perPage,
       offset,
-      raw: true,
+      distinct: true,
     });
 
     return res.json({
       success: true,
       meta: { total: count, page, perPage, totalPages: Math.ceil(count / perPage) },
-      data: rows,
+      data: rows.map(r => {
+        const j = r.toJSON();
+        j.status = j.statusRef?.nome ?? null;
+        delete j.statusRef;
+        return j;
+      }),
     });
   } catch (err) {
     console.error('listClientesNovos:', err);
@@ -879,18 +980,24 @@ exports.listClientesAtendidos = async (req, res) => {
       where.enterprise_id = req.enterprise.id;
     }
     const { count, rows } = await models.Clientes.findAndCountAll({
-      attributes: ['nome', 'updated_at', 'status', 'observacao','ultimo_contato'],
+      attributes: ['id_cliente','nome', 'updated_at', 'status', 'observacao','ultimo_contato'],
       where,
+      include: [{ model: models.ClienteStatus, as: 'statusRef', attributes: ['nome'], required: false }],
       order: [['ultimo_contato', 'DESC'], ['id_cliente', 'DESC']],
       limit: perPage,
       offset,
-      raw: true,
+      distinct: true,
     });
 
     return res.json({
       success: true,
       meta: { total: count, page, perPage, totalPages: Math.ceil(count / perPage) },
-      data: rows,
+      data: rows.map(r => {
+        const j = r.toJSON();
+        j.status = j.statusRef?.nome ?? null;
+        delete j.statusRef;
+        return j;
+      }),
     });
   } catch (err) {
     console.error('listClientesAtendidos:', err);
@@ -921,18 +1028,24 @@ exports.listClientesFechados = async (req, res) => {
       where.enterprise_id = req.enterprise.id;
     }
     const { count, rows } = await models.Clientes.findAndCountAll({
-      attributes: ['nome', 'updated_at', 'status', 'observacao', 'fechado'],
+      attributes: ['id_cliente','nome', 'updated_at', 'status', 'observacao', 'fechado'],
       where,
+      include: [{ model: models.ClienteStatus, as: 'statusRef', attributes: ['nome'], required: false }],
       order: [['fechado', 'DESC'], ['id_cliente', 'DESC']],
       limit: perPage,
       offset,
-      raw: true,
+      distinct: true,
     });
 
     return res.json({
       success: true,
       meta: { total: count, page, perPage, totalPages: Math.ceil(count / perPage) },
-      data: rows,
+      data: rows.map(r => {
+        const j = r.toJSON();
+        j.status = j.statusRef?.nome ?? null;
+        delete j.statusRef;
+        return j;
+      }),
     });
   } catch (err) {
     console.error('listClientesFechados:', err);

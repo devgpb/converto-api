@@ -7,6 +7,7 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrar": "npx sequelize db:migrate",
+    "desmigrar": "npx sequelize db:migrate:undo",
     "migration": "sequelize migration:create --name",
     "migrate:reset-token": "node migrations/add-reset-token-fields.js",
     "queue:workers": "node queues/workers/index.js"

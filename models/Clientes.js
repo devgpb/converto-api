@@ -27,16 +27,18 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     status: {
-      type: DataTypes.STRING,
-      allowNull: true
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'cliente_status', key: 'id' }
     },
     indicacao: {
       type: DataTypes.STRING,
       allowNull: true
     },
     campanha: {
-      type: DataTypes.STRING,
-      allowNull: true
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'cliente_campanhas', key: 'id' }
     },
     observacao: {
       type: DataTypes.TEXT,
@@ -112,7 +114,16 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'enterprise_id',
       as: 'enterprise',
     });
+
+    // relação direta por id (FK) para tabelas mestre
+    if (models.ClienteStatus) {
+      Clientes.belongsTo(models.ClienteStatus, { foreignKey: 'status', as: 'statusRef' });
+    }
+    if (models.ClienteCampanha) {
+      Clientes.belongsTo(models.ClienteCampanha, { foreignKey: 'campanha', as: 'campanhaRef' });
+    }
   };
+
 
   return Clientes;
 };

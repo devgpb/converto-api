@@ -21,6 +21,7 @@ const profileRoutes = require('./routes/profile');
 const sugestoesRoutes = require('./routes/sugestoesRouter');
 const jobsRoutes = require('./routes/jobs');
 const mensagensPadraoRoutes = require('./routes/mensagensPadrao');
+const camposClientesRoutes = require('./routes/camposClientesRouter');
 const ligacoesRoutes = require('./routes/ligacoesRouter');
 const privacyRoutes = require('./routes/privacy');
 const relatoriosRoutes = require('./routes/relatoriosRouter');
@@ -115,6 +116,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/sugestoes', sugestoesRoutes);
 app.use('/api/jobs', jobsRoutes);
 app.use('/api/mensagens-padrao', mensagensPadraoRoutes)
+app.use('/api/campos-clientes', camposClientesRoutes)
 app.use('/api/ligacoes', ligacoesRoutes)
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/relatorios', relatoriosRoutes);
