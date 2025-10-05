@@ -172,6 +172,11 @@ exports.postClientes = async (req, res) => {
 exports.getClientes = async (req, res) => {
   try {
     const { search, status, cidade, sortBy, id_usuario } = req.query;
+    // Filtro por tags do usuário responsável (CSV de UUIDs)
+    const rawTagIds = String(req.query.tagIds || '').trim();
+    const tagIds = rawTagIds
+      ? rawTagIds.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
     const where = {};
 
     // paranoia já filtra deleted_at, mas mantemos explícito
@@ -187,7 +192,19 @@ exports.getClientes = async (req, res) => {
       model: models.User,
       as: 'responsavel',
       attributes: ['name', 'id_usuario'],
-      required: false,
+      required: !!tagIds.length, // quando filtra por tag, o join com usuário vira obrigatório
+      include: tagIds.length ? [{
+        model: models.Tag,
+        as: 'tags',
+        attributes: [],
+        through: { attributes: [] },
+        required: true,
+        where: {
+          id: { [Op.in]: tagIds },
+          // reforça escopo da empresa
+          // enterprise_id: req.enterprise?.id
+        }
+      }] : [],
     }, {
       model: models.ClienteStatus,
       as: 'statusRef',

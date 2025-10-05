@@ -89,6 +89,15 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'id_usuario',
       as: 'sugestoes',
     });
+    // Tags do usuário (por empresa)
+    if (models.Tag && models.UserTag) {
+      User.belongsToMany(models.Tag, {
+        through: models.UserTag,
+        foreignKey: 'user_id',
+        otherKey: 'tag_id',
+        as: 'tags',
+      });
+    }
   };
 
   return User;
