@@ -81,12 +81,7 @@ exports.createUser = async (req, res) => {
     const { id } = req.params;
     try {
       const user = await models.User.findByPk(id,{
-        include: [{
-          model: models.Setores,
-          as: "setor",
-          attributes: ["nome"],
-          paranoid: false
-        }],
+        include: (models.Setores ? [{ model: models.Setores, as: "setor", attributes: ["nome"], paranoid: false }] : []),
         raw:true
       });
       if (!user) {
@@ -98,7 +93,7 @@ exports.createUser = async (req, res) => {
           where: { id_usuario: id },
           include: [{ model: models.Tag, as: 'tags', attributes: ['id', 'name', 'color_hex', 'description'] }],
         });
-        const tags = Array.isArray(userWithTags?.tags) ? userWithTags.tags.map(t => ({
+        const tags = Array.isArray(userWithTags?.tags) ? userWithTags.tags.slice(0,30).map(t => ({
           id: t.id,
           name: t.name,
           color_hex: t.color_hex,
