@@ -97,24 +97,31 @@ exports.getFiltros = async (req, res) => {
   try {
     const whereEnterprise = req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id };
 
-    const [mestresStatus, mestresCampanhas, distStatus, distCampanhas] = await Promise.all([
-      models.ClienteStatus.findAll({ where: whereEnterprise, attributes: ['nome'], raw: true }),
-      models.ClienteCampanha.findAll({ where: whereEnterprise, attributes: ['nome'], raw: true }),
-      models.Clientes.aggregate('status', 'DISTINCT', { plain: false, where: whereEnterprise }),
-      models.Clientes.aggregate('campanha', 'DISTINCT', { plain: false, where: whereEnterprise }),
+    // Busca listas mestre com ids e nomes, e cidades distintas dos clientes
+    const [rowsStatus, rowsCampanhas, distCidades] = await Promise.all([
+      models.ClienteStatus.findAll({
+        where: whereEnterprise,
+        attributes: ['id', 'nome', 'ordem'],
+        order: [['ordem', 'ASC'], ['nome', 'ASC']],
+        raw: true,
+      }),
+      models.ClienteCampanha.findAll({
+        where: whereEnterprise,
+        attributes: ['id', 'nome'],
+        order: [['nome', 'ASC']],
+        raw: true,
+      }),
+      models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: { ...whereEnterprise, deleted_at: null } }),
     ]);
 
-    const status = Array.from(new Set([
-      ...mestresStatus.map((s) => s.nome).filter(Boolean),
-      ...distStatus.map((s) => s.DISTINCT).filter(Boolean),
-    ])).sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+    const status = rowsStatus.map(s => ({ id: s.id, nome: s.nome }));
+    const campanhas = rowsCampanhas.map(c => ({ id: c.id, nome: c.nome }));
+    const cidades = distCidades
+      .map(c => c.DISTINCT)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
 
-    const campanhas = Array.from(new Set([
-      ...mestresCampanhas.map((c) => c.nome).filter(Boolean),
-      ...distCampanhas.map((c) => c.DISTINCT).filter(Boolean),
-    ])).sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
-
-    return res.json({ status, campanhas });
+    return res.json({ cidades, status, campanhas });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

@@ -388,19 +388,14 @@ exports.getFiltros = async (req, res) => {
   try {
     const whereBase = req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id };
     const [cidadesData, statusMestre, campanhasMestre] = await Promise.all([
-      models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: whereBase }),
-      models.ClienteStatus.findAll({ where: whereBase, attributes: ['nome'], order: [['ordem','ASC'],['nome','ASC']], raw: true }),
-      models.ClienteCampanha.findAll({ where: whereBase, attributes: ['nome'], raw: true }),
+      models.Clientes.aggregate('cidade', 'DISTINCT', { plain: false, where: { ...whereBase, deleted_at: null } }),
+      models.ClienteStatus.findAll({ where: whereBase, attributes: ['id','nome','ordem'], order: [['ordem','ASC'],['nome','ASC']], raw: true }),
+      models.ClienteCampanha.findAll({ where: whereBase, attributes: ['id','nome'], order: [['nome','ASC']], raw: true }),
     ]);
 
-    const status = statusMestre.map(s => s.nome).filter(Boolean);
-    const campanhas = campanhasMestre.map(c => c.nome).filter(Boolean);
-    const cidades = cidadesData.map(c => c.DISTINCT).filter(Boolean);
-
-    // ordena alfabeticamente (pt-BR, case-insensitive)
-    status.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
-    campanhas.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
-    cidades.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+    const status = statusMestre.map(s => ({ id: s.id, nome: s.nome }));
+    const campanhas = campanhasMestre.map(c => ({ id: c.id, nome: c.nome }));
+    const cidades = cidadesData.map(c => c.DISTINCT).filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
 
     return res.status(200).json({ status, campanhas, cidades });
   } catch (error) {
