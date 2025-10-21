@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     status: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
       references: { model: 'cliente_status', key: 'id' }
     },
@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     campanha: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
       references: { model: 'cliente_campanhas', key: 'id' }
     },
@@ -121,6 +121,16 @@ module.exports = (sequelize, DataTypes) => {
     }
     if (models.ClienteCampanha) {
       Clientes.belongsTo(models.ClienteCampanha, { foreignKey: 'campanha', as: 'campanhaRef' });
+    }
+
+    // Tags do cliente
+    if (models.Tag && models.ClienteTag) {
+      Clientes.belongsToMany(models.Tag, {
+        through: models.ClienteTag,
+        foreignKey: 'id_cliente',
+        otherKey: 'tag_id',
+        as: 'tags',
+      });
     }
   };
 

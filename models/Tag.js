@@ -35,14 +35,15 @@ module.exports = (sequelize, DataTypes) => {
 
   Tag.associate = (models) => {
     Tag.belongsTo(models.Enterprise, { foreignKey: 'enterprise_id', as: 'enterprise' });
-    Tag.belongsToMany(models.User, {
-      through: models.UserTag,
-      foreignKey: 'tag_id',
-      otherKey: 'user_id',
-      as: 'users',
-    });
+    if (models.Clientes && models.ClienteTag) {
+      Tag.belongsToMany(models.Clientes, {
+        through: models.ClienteTag,
+        foreignKey: 'tag_id',
+        otherKey: 'id_cliente',
+        as: 'clientes',
+      });
+    }
   };
 
   return Tag;
 };
-

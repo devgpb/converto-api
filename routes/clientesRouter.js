@@ -44,6 +44,8 @@ router.post('/dashboard/ligacoes-efetuadas', authenticateToken, clientesControll
 
 router.get('/', authenticateToken, requireActiveSubscription, clientesController.getClientes);
 router.get('/filtros', authenticateToken, requireActiveSubscription, clientesController.getFiltros);
+router.get('/:id', authenticateToken, requireActiveSubscription, clientesController.getClienteById);
+router.post('/:id_cliente/tags', authenticateToken, requireActiveSubscription, clientesController.updateClienteTags);
 router.delete('/:id', authenticateToken, requireActiveSubscription, clientesController.deleteCliente);
 
 module.exports = router;

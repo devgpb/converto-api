@@ -47,11 +47,20 @@ exports.pesquisarNumero = async (req, res) => {
           )
         ]
       },
-      include: [{
-        model: models.User,
-        as: 'responsavel',
-        attributes: ['name', 'id_usuario'],
-      }]
+      include: [
+        {
+          model: models.User,
+          as: 'responsavel',
+          attributes: ['name', 'id_usuario'],
+        },
+        {
+          model: models.Tag,
+          as: 'tags',
+          attributes: ['id', 'name', 'color_hex', 'description'],
+          through: { attributes: [] },
+          required: false,
+        }
+      ]
     });
 
     if (!cliente) {

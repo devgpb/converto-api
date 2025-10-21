@@ -87,22 +87,8 @@ exports.createUser = async (req, res) => {
       if (!user) {
         return res.status(404).json({ error: 'UsuÃ¡rio nÃ£o encontrado' });
       }
-      // Inclui tags do usuário sem quebrar o shape atual (raw:true)
-      try {
-        const userWithTags = await models.User.findOne({
-          where: { id_usuario: id },
-          include: [{ model: models.Tag, as: 'tags', attributes: ['id', 'name', 'color_hex', 'description'] }],
-        });
-        const tags = Array.isArray(userWithTags?.tags) ? userWithTags.tags.slice(0,30).map(t => ({
-          id: t.id,
-          name: t.name,
-          color_hex: t.color_hex,
-          description: t.description,
-        })) : [];
-        return res.status(200).json({ ...user, tags });
-      } catch (_) {
-        return res.status(200).json({ ...user, tags: [] });
-      }
+      // Compat: retornamos campo tags como array vazio (tags agora pertencem a clientes)
+      return res.status(200).json({ ...user, tags: [] });
     } catch (error) {
       console.log(error)
       return res.status(500).json({ error: 'Erro ao buscar usuÃ¡rio' });
@@ -218,28 +204,7 @@ exports.createUser = async (req, res) => {
       // AtualizaÃ§Ã£o normal (sem necessidade de atualizar Enterprise em conjunto)
       try {
         await targetUser.update(updates);
-        // Atualiza tags, se fornecidas (fora de transação para minimizar impacto na rota existente)
-        try {
-          let incomingTagIds = null;
-          if (Array.isArray(req.body?.tag_ids)) incomingTagIds = req.body.tag_ids;
-          else if (Array.isArray(req.body?.tags)) incomingTagIds = req.body.tags;
-          if (incomingTagIds) {
-            const enterpriseId = req.enterprise?.id;
-            if (!enterpriseId) {
-              return res.status(400).json({ error: 'Empresa não encontrada para o usuário atual.' });
-            }
-            const validTags = await models.Tag.findAll({ where: { id: incomingTagIds, enterprise_id: enterpriseId } });
-            if (validTags.length !== incomingTagIds.length) {
-              const validIds = new Set(validTags.map(x => x.id));
-              const notFound = incomingTagIds.filter(x => !validIds.has(x));
-              return res.status(400).json({ error: 'Algumas tags não foram encontradas para esta empresa.', detalhes: notFound });
-            }
-            await targetUser.setTags(validTags);
-          }
-        } catch (tagErr) {
-          console.log('Erro ao atualizar tags do usuário:', tagErr);
-          return res.status(500).json({ error: 'Erro ao atualizar tags do usuário' });
-        }
+        // Removido: atualização de tags do usuário (tags agora são de clientes)
 
         return res.status(200).json({
           id: targetUser.id_usuario,

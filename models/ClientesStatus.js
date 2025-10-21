@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     status_id: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'cliente_status',
@@ -40,4 +40,3 @@ module.exports = (sequelize, DataTypes) => {
 
   return ClientesStatus;
 };
-

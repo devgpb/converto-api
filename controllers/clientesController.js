@@ -25,7 +25,12 @@ exports.postClientes = async (req, res) => {
         .json({ error: "O cliente precisa ter um nome." });
     }
 
-    // se veio id_cliente, valida que existe
+    // normaliza: se id_cliente veio nulo/"null", remove para permitir default UUID
+    if (!validaCampo(id_cliente)) {
+      delete req.body.id_cliente;
+    }
+
+    // se veio id_cliente válido, valida que existe
     let cliente = {}
     if(id_cliente){
       cliente = await models.Clientes.findByPk(id_cliente);
@@ -45,10 +50,13 @@ exports.postClientes = async (req, res) => {
       req.body.nome = formataTexto(nome);
     }
 
+    // aceita tanto status (nome/id) quanto status_id (id)
+    const statusInput = validaCampo(status) ? status : (validaCampo(req.body.status_id) ? req.body.status_id : undefined);
+
     // formata status se veio no body e não vazio
-    if (status) {
-      const isNumeric = !isNaN(Number(status));
-      const statusFormatado = isNumeric ? Number(status) : formataTexto(status);
+    if (validaCampo(statusInput)) {
+      const isNumeric = !isNaN(Number(statusInput));
+      const statusFormatado = isNumeric ? Number(statusInput) : formataTexto(statusInput);
       const statusLower = isNumeric ? '' : String(statusFormatado).toLowerCase();
 
       // não permite mudar o status se já está fechado
@@ -74,23 +82,33 @@ exports.postClientes = async (req, res) => {
         req.body.status = statusFormatado;
       }
 
-      // garante que exista na tabela mestre e atualiza relação quando possível
-      try {
-        const [statusRow] = await models.ClienteStatus.findOrCreate({
-          where: { enterprise_id: enterpriseId, nome: statusFormatado },
-          defaults: { enterprise_id: enterpriseId, nome: statusFormatado },
-        });
-        if (id_cliente && statusRow) {
-          const map = await models.ClientesStatus.findOne({ where: { id_cliente } });
-          if (map) await map.update({ status_id: statusRow.id });
-          else await models.ClientesStatus.create({ id_cliente, status_id: statusRow.id });
-        }
-      } catch (_) {}
+      // garante que exista e atualiza histórico apenas quando veio nome (evita criar nome numérico)
+      if (!isNumeric) {
+        try {
+          const [statusRow] = await models.ClienteStatus.findOrCreate({
+            where: { enterprise_id: enterpriseId, nome: statusFormatado },
+            defaults: { enterprise_id: enterpriseId, nome: statusFormatado },
+          });
+          if (id_cliente && statusRow) {
+            const map = await models.ClientesStatus.findOne({ where: { id_cliente } });
+            if (map) await map.update({ status_id: statusRow.id });
+            else await models.ClientesStatus.create({ id_cliente, status_id: statusRow.id });
+          }
+        } catch (_) {}
+      }
     }
 
     if(cliente.fechado == null && validaCampo(fechado)){
-      // se está sendo fechado agora, seta o timestamp
-      req.body.status = "Fechado";
+      // se está sendo fechado agora, resolve o status "Fechado" para o id da tabela mestre
+      try {
+        const [statusFechado] = await models.ClienteStatus.findOrCreate({
+          where: { enterprise_id: enterpriseId, nome: 'Fechado' },
+          defaults: { enterprise_id: enterpriseId, nome: 'Fechado' },
+        });
+        req.body.status = statusFechado?.id ?? null;
+      } catch (_) {
+        req.body.status = null;
+      }
     }
 
     // Se for reaberto status fica null
@@ -98,10 +116,13 @@ exports.postClientes = async (req, res) => {
       req.body.status = null;
     }
     
+    // aceita tanto campanha (nome/id) quanto campanha_id (id)
+    const campanhaInput = validaCampo(campanha) ? campanha : (validaCampo(req.body.campanha_id) ? req.body.campanha_id : undefined);
+
     // garante campanha mestre e mapeamento, se vier no body
-    if (campanha) {
-      const isNumeric = !isNaN(Number(campanha));
-      const campFormatada = isNumeric ? Number(campanha) : formataTexto(campanha);
+    if (validaCampo(campanhaInput)) {
+      const isNumeric = !isNaN(Number(campanhaInput));
+      const campFormatada = isNumeric ? Number(campanhaInput) : formataTexto(campanhaInput);
       req.body.campanha = campFormatada;
       try {
         if (!isNumeric) {
@@ -144,7 +165,7 @@ exports.postClientes = async (req, res) => {
     }
 
     // --- NOVO BLOCO: verifica mudança de status ---
-    if (id_cliente && status) {
+    if (id_cliente && validaCampo(statusInput)) {
       // busca o registro original (sem respeitar paranoid para pegar mesmo soft-deleted, se quiser)
       const clienteAntigo = await models.Clientes.findByPk(id_cliente);
       if (clienteAntigo && clienteAntigo.status !== req.body.status) {
@@ -192,19 +213,8 @@ exports.getClientes = async (req, res) => {
       model: models.User,
       as: 'responsavel',
       attributes: ['name', 'id_usuario'],
-      required: !!tagIds.length, // quando filtra por tag, o join com usuário vira obrigatório
-      include: tagIds.length ? [{
-        model: models.Tag,
-        as: 'tags',
-        attributes: [],
-        through: { attributes: [] },
-        required: true,
-        where: {
-          id: { [Op.in]: tagIds },
-          // reforça escopo da empresa
-          // enterprise_id: req.enterprise?.id
-        }
-      }] : [],
+      required: false,
+      include: [],
     }, {
       model: models.ClienteStatus,
       as: 'statusRef',
@@ -216,6 +226,18 @@ exports.getClientes = async (req, res) => {
       attributes: ['id', 'nome'],
       required: false,
     }];
+
+    // Quando filtrar por tagIds, faz join com tags do cliente
+    if (tagIds.length) {
+      include.push({
+        model: models.Tag,
+        as: 'tags',
+        attributes: [],
+        through: { attributes: [] },
+        required: true,
+        where: { id: { [Op.in]: tagIds } },
+      });
+    }
 
     // Filtro por status via tabela mestre
     if (status && status !== "todos") {
@@ -359,6 +381,83 @@ exports.getClientes = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// POST /api/clientes/:id_cliente/tags { method: 'add'|'remove', tag_ids: [] }
+exports.updateClienteTags = async (req, res) => {
+  try {
+    const { id_cliente } = req.params;
+    const methodRaw = String(req.body?.method || '').toLowerCase();
+    const tagIds = Array.isArray(req.body?.tag_ids) ? req.body.tag_ids : [];
+
+    if (!id_cliente) return res.status(400).json({ error: 'id_cliente é obrigatório' });
+    if (!['add', 'remove'].includes(methodRaw)) return res.status(400).json({ error: "method deve ser 'add' ou 'remove'" });
+    if (!tagIds.length) return res.status(400).json({ error: 'tag_ids deve ser um array não vazio' });
+
+    const cliente = await models.Clientes.findByPk(id_cliente);
+    if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    // Escopo por empresa
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    // Valida tags da mesma empresa do cliente
+    const validTags = await models.Tag.findAll({ where: { id: tagIds, enterprise_id: cliente.enterprise_id } });
+    if (validTags.length !== tagIds.length) {
+      const validSet = new Set(validTags.map(t => t.id));
+      const notFound = tagIds.filter(id => !validSet.has(id));
+      return res.status(400).json({ error: 'Algumas tags não foram encontradas para esta empresa.', detalhes: notFound });
+    }
+
+    if (methodRaw === 'add') {
+      // Evita duplicatas consultando associações atuais
+      const current = await cliente.getTags({ attributes: ['id'] });
+      const currentSet = new Set(current.map(t => t.id));
+      const toAdd = validTags.filter(t => !currentSet.has(t.id));
+      if (toAdd.length) await cliente.addTags(toAdd);
+    } else if (methodRaw === 'remove') {
+      await cliente.removeTags(validTags);
+    }
+
+    // Retorna tags atualizadas
+    const updated = await cliente.getTags({ attributes: ['id', 'name', 'color_hex', 'description'] });
+    return res.status(200).json({ id_cliente: cliente.id_cliente, tags: updated });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Erro ao atualizar tags do cliente' });
+  }
+};
+
+// Busca um cliente por ID e inclui as tags do cliente
+exports.getClienteById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const cliente = await models.Clientes.findByPk(id, {
+      include: [
+        { model: models.User, as: 'responsavel', attributes: ['name', 'id_usuario'], required: false },
+        { model: models.ClienteStatus, as: 'statusRef', attributes: ['id', 'nome'], required: false },
+        { model: models.ClienteCampanha, as: 'campanhaRef', attributes: ['id', 'nome'], required: false },
+        { model: models.Tag, as: 'tags', attributes: ['id', 'name', 'color_hex', 'description'], through: { attributes: [] }, required: false },
+      ],
+    });
+
+    if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    if (req.user.role !== 'moderator' && cliente.enterprise_id !== req.enterprise.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const json = cliente.toJSON();
+    json.status = json?.statusRef?.nome ?? null;
+    json.campanha = json?.campanhaRef?.nome ?? null;
+    delete json.statusRef;
+    delete json.campanhaRef;
+    return res.json(json);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: error.message });
   }
 };
 
