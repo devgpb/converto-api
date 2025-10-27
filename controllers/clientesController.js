@@ -189,6 +189,14 @@ exports.postClientes = async (req, res) => {
   }
 };
 
+// Helper: normaliza texto removendo acentos via translate (fallback sem extensão unaccent)
+const ACCENTED = 'ÁÀÂÃÄáàâãäÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ';
+const PLAIN    = 'AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn';
+const normLower = (colExpr) => Sequelize.fn(
+  'lower',
+  Sequelize.fn('translate', colExpr, ACCENTED, PLAIN)
+);
+
 // Lista clientes com filtros, ordenação e paginação + meta
 exports.getClientes = async (req, res) => {
   try {
@@ -244,7 +252,12 @@ exports.getClientes = async (req, res) => {
       const statusInc = include.find(i => i.as === 'statusRef');
       if (statusInc) {
         statusInc.required = true;
-        statusInc.where = { nome: { [Op.iLike]: status } };
+        const s = String(status).trim();
+        const isUuid = /^[0-9a-fA-F-]{36}$/.test(s);
+        const isNumeric = /^\d+$/.test(s);
+        statusInc.where = (isUuid || isNumeric)
+          ? { id: s }
+          : { nome: { [Op.iLike]: s } };
       }
     }
 
@@ -266,39 +279,37 @@ exports.getClientes = async (req, res) => {
 
       const orConds = [];
 
-      // nome: unaccent + lower LIKE %normalized%
+      // nome (Clientes): lower(translate(...)) LIKE %normalized%
       orConds.push(
         Sequelize.where(
-          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('nome'))),
+          normLower(Sequelize.col('Clientes.nome')),
           { [Op.like]: `%${normalized}%` }
         )
       );
 
-      // campanha: se existir, aplica mesma lógica de texto
       // campanha por relação direta
-      orConds.push(
-        Sequelize.where(
-          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('campanhaRef.nome'))),
-          { [Op.like]: `%${normalized}%` }
-        )
-      );
+      // orConds.push(
+      //   Sequelize.where(
+      //     normLower(Sequelize.col('campanhaRef.nome')),
+      //     { [Op.like]: `%${normalized}%` }
+      //   )
+      // );
 
-      // status: texto normalizado
       // status por relação direta
-      orConds.push(
-        Sequelize.where(
-          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('statusRef.nome'))),
-          { [Op.like]: `%${normalized}%` }
-        )
-      );
+      // orConds.push(
+      //   Sequelize.where(
+      //     normLower(Sequelize.col('statusRef.nome')),
+      //     { [Op.like]: `%${normalized}%` }
+      //   )
+      // );
 
-      // cidade: texto normalizado
-      orConds.push(
-        Sequelize.where(
-          Sequelize.fn('lower', Sequelize.fn('unaccent', Sequelize.col('cidade'))),
-          { [Op.like]: `%${normalized}%` }
-        )
-      );
+      // cidade (Clientes)
+      // orConds.push(
+      //   Sequelize.where(
+      //     normLower(Sequelize.col('Clientes.cidade')),
+      //     { [Op.like]: `%${normalized}%` }
+      //   )
+      // );
 
       // celular: remove símbolos no banco e faz LIKE com apenas dígitos
       if (onlyDigits) {
@@ -319,7 +330,7 @@ exports.getClientes = async (req, res) => {
     // Ordenação
     let order = [['updated_at', 'DESC']];
     if (sortBy === 'antigo') order = [['updated_at', 'ASC']];
-    if (sortBy === 'nome') order = [['nome', 'ASC']];
+    if (sortBy === 'nome') order = [[Sequelize.col('Clientes.nome'), 'ASC']];
     if (sortBy === 'id') order = [['id_cliente', 'ASC']];
 
     // Paginação
