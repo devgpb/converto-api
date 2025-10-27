@@ -16,7 +16,8 @@ async function getUserByRole(req, res, role){
   }
 }
 
-// CREATE - Cria um novo usuÃ¡rio membro dentro do tenant do administrador
+// CREATE - Cria um novo usuário membro dentro do tenant do administrador
+// Regra de assentos: só permite criar se houver assentos pagos disponíveis
 exports.createUser = async (req, res) => {
   try {
     const { email, password, name, cpf } = req.body;
@@ -30,16 +31,34 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ error: 'Email jÃ¡ existe' });
     }
 
+    // Enforce seat availability for this tenant
+    const tenantId = req.user.tenant_id;
+    // Conta usuários ativos do tenant
+    const activeUsersCount = await models.User.count({ where: { tenant_id: tenantId, is_active: true } });
+    // Busca assinatura ativa ou em trial para obter quantidade de assentos
+    const { Op } = models.Sequelize;
+    const activeSub = await models.Subscription.findOne({
+      where: { tenant_id: tenantId, status: { [Op.in]: ['active', 'trialing'] } },
+      order: [['created_at', 'DESC']],
+    });
+    const paidSeats = activeSub ? Number(activeSub.quantity || 0) : 0;
+    if (activeUsersCount >= paidSeats) {
+      return res.status(409).json({
+        error: 'Sem assentos disponíveis. Desative ou remova um usuário para liberar vaga.'
+      });
+    }
+
     const password_hash = await bcrypt.hash(password, saltRounds);
 
     const newUser = await models.User.create({
-      tenant_id: req.user.tenant_id,
+      tenant_id: tenantId,
       email,
       name,
       role: 'member',
       principal: false,
       password_hash,
-      cpf: cpf || null
+      cpf: cpf || null,
+      is_active: true,
     });
 
     return res.status(201).json({
@@ -253,20 +272,22 @@ exports.updateUserRole = async (req, res) => {
   }
 };
 
-  // DELETE - Remove um usuÃ¡rio por ID
+  // DELETE - "Soft delete": desativa um usuário por ID (não pode mais logar)
   exports.deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
-      const deleted = await models.User.destroy({
-        where: { id_usuario: id },
-      });
-      if (deleted > 0) {
-        res.status(200).json({ message: "Setor deletado com sucesso" });
-      } else {
-        res.status(404).json({ message: "Setor nÃ£o encontrada" });
+      const user = await models.User.findOne({ where: { id_usuario: id } });
+      if (!user) {
+        return res.status(404).json({ message: 'Usuário não encontrado' });
       }
+      // Marca como inativo (soft delete lógico)
+      if (!user.is_active) {
+        return res.status(200).json({ message: 'Usuário já estava inativo' });
+      }
+      await user.update({ is_active: false });
+      return res.status(200).json({ message: 'Usuário desativado com sucesso' });
     } catch (error) {
-      return res.status(500).json({ error: 'Erro ao excluir usuÃ¡rio' });
+      return res.status(500).json({ error: 'Erro ao desativar usuário' });
     }
   };
   

@@ -182,7 +182,8 @@ exports.deleteStatus = async (req, res) => {
     if (req.user.role !== 'moderator' && row.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const qtd = await models.ClientesStatus.count({ where: { status_id: row.id }, include: [{ model: models.Clientes, as: 'cliente', attributes: [], where: { deleted_at: null, ...(req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id }) } }] });
+    // Verifica uso direto via FK em clientes.status (modelo atual)
+    const qtd = await models.Clientes.count({ where: { deleted_at: null, status: row.id, ...(req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id }) } });
     if (qtd > 0) {
       return res.status(409).json({ error: 'Existem clientes com este status. Remova ou altere antes de excluir.' });
     }
@@ -202,7 +203,8 @@ exports.deleteCampanha = async (req, res) => {
     if (req.user.role !== 'moderator' && row.enterprise_id !== req.enterprise.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const qtd = await models.ClientesCampanhas.count({ where: { campanha_id: row.id }, include: [{ model: models.Clientes, as: 'cliente', attributes: [], where: { deleted_at: null, ...(req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id }) } }] });
+    // Verifica uso direto via FK em clientes.campanha (modelo atual)
+    const qtd = await models.Clientes.count({ where: { deleted_at: null, campanha: row.id, ...(req.user.role === 'moderator' ? {} : { enterprise_id: req.enterprise.id }) } });
     if (qtd > 0) {
       return res.status(409).json({ error: 'Existem clientes nesta campanha. Remova ou altere antes de excluir.' });
     }

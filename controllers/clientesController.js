@@ -332,6 +332,7 @@ exports.getClientes = async (req, res) => {
     if (sortBy === 'antigo') order = [['updated_at', 'ASC']];
     if (sortBy === 'nome') order = [[Sequelize.col('Clientes.nome'), 'ASC']];
     if (sortBy === 'id') order = [['id_cliente', 'ASC']];
+    if (sortBy === 'random' || sortBy === 'aleatorio') order = Sequelize.literal('RANDOM()');
 
     // Paginação
     let page = Math.max(1, parseInt(req.query.page, 10) || 1);
