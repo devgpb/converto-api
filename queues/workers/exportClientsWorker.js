@@ -1,11 +1,23 @@
-const { Worker } = require('bullmq');
+﻿const { Worker } = require('bullmq');
 const path = require('path');
 const connection = require('../../services/redis');
 const models = require('../../models');
 const { uploadBuffer, createSignedUrl, SUPABASE_BUCKET } = require('../../services/supabase');
 
-// Configuração de retenção no topo do arquivo (em dias)
+// ConfiguraÃ§Ã£o de retenÃ§Ã£o no topo do arquivo (em dias)
 const EXPORT_FILE_TTL_DAYS = 2;
+
+function formatDateBR(value) {
+  if (!value) return '';
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(d.getFullYear());
+    return dd + '/' + mm + '/' + yyyy;
+  } catch (_) { return ''; }
+}
 
 function toCsvValue(value) {
   if (value === null || value === undefined) return '';
@@ -24,7 +36,7 @@ function rowsToCsv(rows) {
     'created_at', 'updated_at'
   ];
   const lines = [];
-  lines.push(headers.join(','));
+  lines.push(headers.join(';'));
   for (const r of rows) {
     const line = [
       r.id_cliente,
@@ -37,13 +49,13 @@ function rowsToCsv(rows) {
       r.indicacao,
       r.campanha,
       r.observacao,
-      r.fechado ? new Date(r.fechado).toISOString() : '',
-      r.tempo_status ? new Date(r.tempo_status).toISOString() : '',
-      r.ultimo_contato ? new Date(r.ultimo_contato).toISOString() : '',
+      formatDateBR(r.fechado),
+      formatDateBR(r.tempo_status),
+      formatDateBR(r.ultimo_contato),
       r.orcamento_enviado === true ? 'true' : r.orcamento_enviado === false ? 'false' : '',
-      r.created_at ? new Date(r.created_at).toISOString() : '',
-      r.updated_at ? new Date(r.updated_at).toISOString() : '',
-    ].map(toCsvValue).join(',');
+      formatDateBR(r.created_at),
+      formatDateBR(r.updated_at),
+    ].map(toCsvValue).join(';');
     lines.push(line);
   }
   return lines.join('\n');
@@ -52,30 +64,38 @@ function rowsToCsv(rows) {
 async function processExport(job) {
   const { exportScope, enterpriseId, targetUserId, userId, requesterRole } = job.data || {};
 
-  // Segurança no worker: reforça permissão
+  // SeguranÃ§a no worker: reforÃ§a permissÃ£o
   if (exportScope === 'enterprise' && requesterRole !== 'admin') {
-    throw new Error('Permissão negada: apenas admin exporta todos os clientes da empresa');
+    throw new Error('PermissÃ£o negada: apenas admin exporta todos os clientes da empresa');
   }
 
   const where = { deleted_at: null };
   if (exportScope === 'enterprise') {
-    if (!enterpriseId) throw new Error('enterpriseId ausente para exportação por empresa');
+    if (!enterpriseId) throw new Error('enterpriseId ausente para exportaÃ§Ã£o por empresa');
     where.enterprise_id = enterpriseId;
   } else {
-    if (!targetUserId) throw new Error('targetUserId ausente para exportação por usuário');
+    if (!targetUserId) throw new Error('targetUserId ausente para exportaÃ§Ã£o por usuÃ¡rio');
     where.id_usuario = targetUserId;
   }
 
-  // Busca clientes (paranoid true por padrão já ignora deleted_at)
+  // Busca clientes (paranoid true por padrÃ£o jÃ¡ ignora deleted_at)
   const clientes = await models.Clientes.findAll({
     where,
     order: [['created_at', 'ASC']],
   });
 
   const plain = clientes.map(c => c.get({ plain: true }));
-  const csv = rowsToCsv(plain);
-  const buffer = Buffer.from(csv, 'utf8');
 
+  // Mapa status id -> nome para exportar status como texto
+  const statusIds = Array.from(new Set(plain.map(r => r.status).filter(Boolean)));
+  let statusMap = {};
+  if (statusIds.length) {
+    const statusRows = await models.ClienteStatus.findAll({ attributes: ['id','nome'], where: { id: statusIds }, raw: true });
+    statusMap = Object.fromEntries(statusRows.map(s => [s.id, s.nome]));
+  }
+  const rows = plain.map(r => ({ ...r, status: r.status ? (statusMap[r.status] || '') : '' }));
+  const csv = rowsToCsv(rows);
+  const buffer = Buffer.from(csv, 'utf8');
   const envPrefix = process.env.STORAGE_ENV || (process.env.NODE_ENV === 'production' ? 'prod' : 'dev');
   const baseDir = `exports/${envPrefix}/${enterpriseId || 'no-enterprise'}`;
   const filename = `clientes_${exportScope}_${Date.now()}.csv`;
@@ -101,7 +121,7 @@ const worker = new Worker('export-clients', async job => {
   if (job.name === 'export') {
     return await processExport(job);
   }
-  throw new Error(`Nome de job não suportado: ${job.name}`);
+  throw new Error(`Nome de job nÃ£o suportado: ${job.name}`);
 }, { connection });
 
 worker.on('failed', (job, err) => {
@@ -110,7 +130,7 @@ worker.on('failed', (job, err) => {
       id: job?.id,
       name: job?.name,
       queue: job?.queueName,
-      data: job?.data, // log completo para diagnóstico interno
+      data: job?.data, // log completo para diagnÃ³stico interno
       message: err?.message,
       stack: err?.stack,
     });
@@ -136,3 +156,8 @@ worker.on('completed', (job, result) => {
 });
 
 module.exports = worker;
+
+
+
+
+

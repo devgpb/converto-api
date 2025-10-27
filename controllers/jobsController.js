@@ -44,8 +44,14 @@ exports.exportClients = async (req, res) => {
   try {
     const { exportScope, targetUserId } = req.body || {};
 
-    // Escopo padrão: exportar do próprio usuário
-    const scope = exportScope === 'enterprise' ? 'enterprise' : 'user';
+    // Determina escopo: se exportScope foi enviado, valida; se não enviado, admin -> enterprise, senão user
+    let scope;
+    if (typeof exportScope === 'string' && exportScope.trim() !== '') {
+      const e = exportScope.trim();
+      scope = e;
+    } else {
+      scope = req.user?.role === 'admin' ? 'enterprise' : 'user';
+    }
 
     // Apenas admin pode exportar todos os clientes da empresa
     if (scope === 'enterprise' && req.user.role !== 'admin') {
