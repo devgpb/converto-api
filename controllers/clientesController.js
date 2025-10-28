@@ -341,10 +341,23 @@ exports.getClientes = async (req, res) => {
     perPage = Math.min(perPage, 200);
     let offset = (page - 1) * perPage;
 
+    // Retorna apenas os campos necessários para as listas/Kanban
+    const attributes = [
+      'id_cliente',
+      'nome',
+      'celular',
+      'cidade',
+      'created_at',
+      'updated_at',
+      'ultimoContato',
+      'fechado',
+    ];
+
     let result = await models.Clientes.findAndCountAll({
       where,
       order,
       include,
+      attributes,
       limit: perPage,
       offset,
       distinct: true,
@@ -363,6 +376,7 @@ exports.getClientes = async (req, res) => {
         where,
         order,
         include,
+        attributes,
         limit: perPage,
         offset,
         distinct: true,
