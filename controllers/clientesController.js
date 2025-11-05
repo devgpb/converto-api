@@ -349,7 +349,7 @@ exports.getClientes = async (req, res) => {
       'cidade',
       'created_at',
       'updated_at',
-      'ultimoContato',
+      'ultimo_contato',
       'fechado',
     ];
 
