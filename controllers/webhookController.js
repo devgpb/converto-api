@@ -28,12 +28,27 @@ const handleStripeWebhook = async (req, res) => {
   }
 
   try {
-    // Registrar evento para auditoria
-    await AuditBillingEvent.create({
-      type: event.type,
-      payload_json: event,
-      stripe_event_id: event.id
+    // Registrar evento para auditoria sem depender de insert cego
+    const [auditEvent, created] = await AuditBillingEvent.findOrCreate({
+      where: { stripe_event_id: event.id },
+      defaults: {
+        type: event.type,
+        payload_json: event
+      }
     });
+
+    if (!created) {
+      if (auditEvent.processed_at) {
+        console.log(`Stripe event ${event.id} já processado. Ignorando duplicado.`);
+        return res.json({ received: true, duplicate: true });
+      }
+
+      // Atualiza payload/type para facilitar reprocessamentos posteriores
+      await auditEvent.update({
+        type: event.type,
+        payload_json: event
+      });
+    }
 
     // Processar evento baseado no tipo
     switch (event.type) {
@@ -71,10 +86,7 @@ const handleStripeWebhook = async (req, res) => {
     }
 
     // Marcar evento como processado
-    await AuditBillingEvent.update(
-      { processed_at: new Date() },
-      { where: { stripe_event_id: event.id } }
-    );
+    await auditEvent.update({ processed_at: new Date() });
 
     res.json({ received: true });
 
@@ -318,4 +330,3 @@ const handlePaymentIntentFailed = async (paymentIntent) => {
 module.exports = {
   handleStripeWebhook
 };
-
