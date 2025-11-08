@@ -60,6 +60,36 @@ const validatePortalRequest = (req, res, next) => {
   next();
 };
 
+const validateReactivationRequest = (req, res, next) => {
+  const { tenant_id, success_url, cancel_url, price_id, seatCountInicial } = req.body;
+
+  if (!tenant_id || typeof tenant_id !== 'string') {
+    return res.status(400).json({ error: 'tenant_id é obrigatório' });
+  }
+
+  if (!success_url || typeof success_url !== 'string' || !isValidUrl(success_url)) {
+    return res.status(400).json({ error: 'success_url deve ser uma URL válida' });
+  }
+
+  if (!cancel_url || typeof cancel_url !== 'string' || !isValidUrl(cancel_url)) {
+    return res.status(400).json({ error: 'cancel_url deve ser uma URL válida' });
+  }
+
+  if (price_id && typeof price_id !== 'string') {
+    return res.status(400).json({ error: 'price_id deve ser uma string válida' });
+  }
+
+  if (seatCountInicial !== undefined) {
+    const seatCountNumber = Number(seatCountInicial);
+    if (!Number.isInteger(seatCountNumber) || seatCountNumber < 1) {
+      return res.status(400).json({ error: 'seatCountInicial deve ser um número inteiro positivo' });
+    }
+    req.body.seatCountInicial = seatCountNumber;
+  }
+
+  next();
+};
+
 // Funções auxiliares
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,6 +109,6 @@ module.exports = {
   validateTenantCreation,
   validateCheckoutCreation,
   validateSeatSync,
-  validatePortalRequest
+  validatePortalRequest,
+  validateReactivationRequest
 };
-

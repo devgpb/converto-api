@@ -7,10 +7,12 @@ const {
   syncSubscription,
   cancelSubscription,
   resumeSubscription,
+  reactivateSubscription,
 } = require('../controllers/billingController');
 const { 
   validateCheckoutCreation, 
-  validatePortalRequest 
+  validatePortalRequest,
+  validateReactivationRequest
 } = require('../middleware/validation');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { listCancellationReasons } = require('../controllers/cancellationController');
@@ -32,6 +34,9 @@ router.post('/cancel', authenticateToken, requireRole(['admin', 'moderator']), v
 
 // POST /api/billing/resume - Reativar renovação automática
 router.post('/resume', authenticateToken, requireRole(['admin', 'moderator']), validatePortalRequest, resumeSubscription);
+
+// POST /api/billing/reactivate - Criar novo checkout para reativar assinatura cancelada
+router.post('/reactivate', authenticateToken, requireRole(['admin', 'moderator']), validateReactivationRequest, reactivateSubscription);
 
 // GET /api/billing/cancellations - Listar motivos de cancelamento do tenant
 router.get('/cancellations', authenticateToken, requireRole(['admin', 'moderator']), listCancellationReasons);
