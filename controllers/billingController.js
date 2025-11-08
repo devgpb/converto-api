@@ -3,6 +3,10 @@ const { Op } = require('sequelize');
 const stripe = require('../utils/stripe');
 const { v4: uuidv4 } = require('uuid');
 
+const TRIAL_PERIOD_DAYS = Number.isFinite(Number(process.env.STRIPE_TRIAL_DAYS))
+  ? Number(process.env.STRIPE_TRIAL_DAYS)
+  : 7;
+
 // Helper: converte timestamp do Stripe (segundos) para Date ou null
 const toDateOrNull = (unixSeconds) => {
   const n = Number(unixSeconds);
@@ -251,6 +255,16 @@ const createCheckoutSession = async (req, res) => {
     const idempotencyKey = uuidv4();
 
     // Criar checkout session no Stripe
+    const subscriptionData = {
+      metadata: {
+        tenant_id: tenant_id
+      }
+    };
+
+    if (TRIAL_PERIOD_DAYS > 0) {
+      subscriptionData.trial_period_days = TRIAL_PERIOD_DAYS;
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: tenant.stripe_customer_id,
       payment_method_types: ['card'],
@@ -261,11 +275,7 @@ const createCheckoutSession = async (req, res) => {
       mode: 'subscription',
       success_url: success_url,
       cancel_url: cancel_url,
-      subscription_data: {
-        metadata: {
-          tenant_id: tenant_id
-        }
-      },
+      subscription_data: subscriptionData,
       metadata: {
         tenant_id: tenant_id,
         initial_seat_count: seatCountInicial.toString()
