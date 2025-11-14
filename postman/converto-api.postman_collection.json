@@ -1359,6 +1359,35 @@
       ]
     },
     {
+      "name": "Calendário",
+      "item": [
+        {
+          "name": "Consultar Calendário",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "description": "Retorna o calendário agrupado por dia aplicando filtros como período, status, cliente ou usuário. Administradores e moderadores podem informar id_usuario=* para visualizar toda a empresa ou escolher outro usuário.",
+            "url": {
+              "raw": "{{base_url}}/api/calendario?inicio=2025-01-01&fim=2025-01-31&tz=America/Maceio&status=todos&id_usuario={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "calendario"],
+              "query": [
+                { "key": "inicio", "value": "2025-01-01", "description": "Data inicial (YYYY-MM-DD). Opcional: padrão início do mês atual." },
+                { "key": "fim", "value": "2025-01-31", "description": "Data final (YYYY-MM-DD). Opcional: padrão fim do mês atual." },
+                { "key": "tz", "value": "America/Maceio", "description": "Timezone usado para agrupar dias e formatar horários." },
+                { "key": "status", "value": "todos", "description": "Filtra por pendente | confirmado | cancelado | todos." },
+                { "key": "id_usuario", "value": "{{user_id}}", "description": "Opcional. Use '*' para todos os usuários (apenas admin/moderator)." },
+                { "key": "id_cliente", "value": "", "description": "Opcional: restringe eventos de um cliente específico." }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Ligações",
       "item": [
         {

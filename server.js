@@ -26,6 +26,7 @@ const camposClientesRoutes = require('./routes/camposClientesRouter');
 const ligacoesRoutes = require('./routes/ligacoesRouter');
 const privacyRoutes = require('./routes/privacy');
 const relatoriosRoutes = require('./routes/relatoriosRouter');
+const calendarioRoutes = require('./routes/calendario');
 
 require('./queues/workers');
 
@@ -122,6 +123,7 @@ app.use('/api/campos-clientes', camposClientesRoutes)
 app.use('/api/ligacoes', ligacoesRoutes)
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/relatorios', relatoriosRoutes);
+app.use('/api/calendario', calendarioRoutes);
 
 
 // Auth routes supported under both /api and /api/auth for compatibility
@@ -221,4 +223,3 @@ process.on('SIGINT', async () => {
 startServer();
 
 module.exports = app;
-

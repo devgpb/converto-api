@@ -4,6 +4,7 @@ const { Sequelize } = models
 const { Op } = Sequelize;
 const { formataTexto } = require('../utils/utils');
 const moment = require('moment-timezone');
+const { DateTime } = require('luxon');
 
 const TZ = 'America/Maceio';
 
@@ -547,8 +548,20 @@ exports.postEvento = async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    const quando = new Date(data);
-    if (isNaN(quando.getTime())) return res.status(400).json({ error: 'Data inválida.' });
+    const tzEvento = req.body?.tz || req.query?.tz || TZ;
+    let quandoLuxon = null;
+    if (data instanceof Date) {
+      quandoLuxon = DateTime.fromJSDate(data, { zone: tzEvento });
+    } else if (typeof data === 'string') {
+      quandoLuxon = DateTime.fromISO(data, { zone: tzEvento });
+      if (!quandoLuxon.isValid) {
+        quandoLuxon = DateTime.fromFormat(data, 'dd/LL/yyyy HH:mm', { zone: tzEvento });
+      }
+    }
+    if (!quandoLuxon || !quandoLuxon.isValid) {
+      return res.status(400).json({ error: 'Data inválida.' });
+    }
+    const quando = quandoLuxon.toUTC().toJSDate();
 
     // só bloqueia se JÁ existir um PENDENTE para o mesmo trio
     const pendente = await models.EventosUsuarioCliente.findOne({
@@ -583,6 +596,8 @@ exports.postEvento = async (req, res) => {
       delete json.cliente.statusRef;
       delete json.cliente.campanhaRef;
     }
+    json.dataISO = DateTime.fromJSDate(json.data, { zone: 'utc' }).toISO();
+    json.dataLocal = DateTime.fromJSDate(json.data, { zone: 'utc' }).setZone(tzEvento).toFormat('dd/MM/yyyy HH:mm');
     return res.json(json);
   } catch (error) {
     console.error(error);
